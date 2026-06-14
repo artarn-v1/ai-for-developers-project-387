@@ -1,5 +1,5 @@
 // Shared design tokens for the client-facing booking pages.
-// Single source of truth so MeetingTypesPage and BookingPage stay in sync.
+// Single source of truth so MeetingTypesPage stays in sync.
 export const COLORS = {
   bg: '#18181b',
   cardBg: '#27272a',

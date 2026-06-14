@@ -29,12 +29,8 @@ npm run generate:types  # генерация типов из OpenAPI
 | `/admin/:adminSlug` | — | Layout админки → `/admin/:adminSlug/meeting-types` |
 | `/admin/:adminSlug/meeting-types` | MeetingTypesPage | Типы встреч |
 | `/admin/:adminSlug/meetings` | MeetingsPage | Список встреч |
-| `/client/:ownerSlug` | ClientMeetingTypesPage | Типы встреч для бронирования |
+| `/client/:ownerSlug` | ClientLayout → ClientMeetingTypesPage | Типы встреч для бронирования |
 | `/client/:ownerSlug/:meetingTypeSlug` | CalendarPage | Календарь и выбор слота |
-| `/client/:ownerSlug/:meetingTypeSlug/book` | BookingPage | Форма бронирования |
-
-Выбор слота в календаре ведёт на форму бронирования, передавая дату и слот
-через router state. Успешное бронирование возвращает на календарь.
 
 Примеры:
 
@@ -42,4 +38,3 @@ npm run generate:types  # генерация типов из OpenAPI
 - `/admin/john/meetings`
 - `/client/john`
 - `/client/john/15min`
-- `/client/john/15min/book`
