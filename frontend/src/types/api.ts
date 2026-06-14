@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/admin/{adminSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminOwner_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/{adminSlug}/meeting-types": {
         parameters: {
             query?: never;
@@ -120,6 +136,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "Admin.AdminOwnerResponse": {
+            /** @example Evgeny */
+            name: string;
+            /** @example evgeny */
+            clientSlug: string;
+            /** @example Europe/Moscow */
+            timeZone: string;
+        };
         "Admin.CreateMeetingTypeRequest": {
             name: string;
             description: string;
@@ -277,6 +301,28 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    AdminOwner_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adminSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Admin.AdminOwnerResponse"];
+                };
+            };
+        };
+    };
     AdminMeetingTypes_list: {
         parameters: {
             query?: never;

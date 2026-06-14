@@ -1,11 +1,16 @@
 import { api } from './client.ts'
 import type { components } from '../types/api.ts'
 
+type AdminOwnerResponse = components['schemas']['Admin.AdminOwnerResponse']
 type MeetingTypeResponse = components['schemas']['Admin.MeetingTypeResponse']
 type CreateMeetingTypeRequest = components['schemas']['Admin.CreateMeetingTypeRequest']
 type MeetingResponse = components['schemas']['Admin.MeetingResponse']
 type MeetingStatusUpdate = components['schemas']['Admin.MeetingStatusUpdate']
 type MeetingTypeStatusUpdate = components['schemas']['Admin.MeetingTypeStatusUpdate']
+
+export function getOwner(adminSlug: string) {
+  return api.get<AdminOwnerResponse>(`/admin/${adminSlug}`)
+}
 
 export function getMeetingTypes(adminSlug: string) {
   return api.get<MeetingTypeResponse[]>(

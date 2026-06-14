@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Title, Loader, Alert, Switch, CopyButton, Button, TextInput, NumberInput, Stack, Box, Modal, Group } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { useDisclosure } from '@mantine/hooks'
-import { getMeetingTypes, updateMeetingTypeStatus, createMeetingType } from '../../api/admin.ts'
+import { getOwner, getMeetingTypes, updateMeetingTypeStatus, createMeetingType } from '../../api/admin.ts'
 import { COLORS } from '../../theme.ts'
 
 const cellStyle: React.CSSProperties = {
@@ -20,6 +20,12 @@ export default function MeetingTypesPage() {
   const { adminSlug } = useParams<{ adminSlug: string }>()
   const queryClient = useQueryClient()
   const [opened, { open, close }] = useDisclosure(false)
+
+  const { data: owner } = useQuery({
+    queryKey: ['owner', adminSlug],
+    queryFn: () => getOwner(adminSlug!),
+    enabled: !!adminSlug,
+  })
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['meeting-types', adminSlug],
@@ -81,7 +87,7 @@ export default function MeetingTypesPage() {
           Meeting Types
         </Title>
         <Group gap="xs">
-          <CopyButton value={`${window.location.origin}/client/${adminSlug}`}>
+          <CopyButton value={`${window.location.origin}/client/${owner?.clientSlug ?? adminSlug}`}>
             {({ copied, copy }) => (
               <Button size="xs" color={copied ? 'green' : 'blue'} onClick={copy}>
                 {copied ? 'Copied' : 'Copy client link'}
@@ -122,7 +128,7 @@ export default function MeetingTypesPage() {
                 />
               </Table.Td>
               <Table.Td style={cellStyle}>
-                <CopyButton value={`${window.location.origin}/client/${adminSlug}/${mt.slug}`}>
+                <CopyButton value={`${window.location.origin}/client/${owner?.clientSlug ?? adminSlug}/${mt.slug}`}>
                   {({ copied, copy }) => (
                     <Button size="xs" color={copied ? 'green' : 'blue'} onClick={copy}>
                       {copied ? 'Copied' : 'Copy'}

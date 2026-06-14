@@ -77,6 +77,23 @@ model MeetingTypeStatusUpdate {
   isActive: boolean;
 }
 
+model AdminOwnerResponse {
+  @example("Evgeny")
+  name: string;
+
+  @example("evgeny")
+  clientSlug: string;
+
+  @example("Europe/Moscow")
+  timeZone: string;
+}
+
+@route("/admin/{adminSlug}")
+interface AdminOwner {
+  @get
+  get(@path adminSlug: string): AdminOwnerResponse;
+}
+
 @route("/admin/{adminSlug}/meeting-types")
 interface AdminMeetingTypes {
   @get

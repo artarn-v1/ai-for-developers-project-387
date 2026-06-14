@@ -65,8 +65,22 @@ func (h *AdminHandler) buildAdminMeetingResponse(m *model.Meeting) (adminMeeting
 	}, nil
 }
 
+func (h *AdminHandler) getOwner(w http.ResponseWriter, r *http.Request) {
+	owner, err := h.ownerFromSlug(r)
+	if err != nil {
+		writeError(w, "owner not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, adminOwnerResponse{
+		Name:       owner.Name,
+		ClientSlug: owner.ClientSlug,
+		TimeZone:   owner.TimeZone,
+	})
+}
+
 func (h *AdminHandler) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Get("/", h.getOwner)
 	r.Get("/meeting-types", h.listMeetingTypes)
 	r.Post("/meeting-types", h.createMeetingType)
 	r.Patch("/meeting-types/{meetingTypeId}", h.updateMeetingTypeStatus)

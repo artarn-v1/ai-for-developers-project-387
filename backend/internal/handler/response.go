@@ -1,5 +1,11 @@
 package handler
 
+type adminOwnerResponse struct {
+	Name       string `json:"name"`
+	ClientSlug string `json:"clientSlug"`
+	TimeZone   string `json:"timeZone"`
+}
+
 type adminMeetingTypeResponse struct {
 	ID              string `json:"id"`
 	Name            string `json:"name"`
