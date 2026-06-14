@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Title, Loader, Alert, Switch, CopyButton, Button, TextInput, NumberInput, Stack, Box, Modal, Group } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { useDisclosure } from '@mantine/hooks'
-import { getMeetingTypes, updateMeetingStatus, createMeetingType } from '../../api/admin.ts'
+import { getMeetingTypes, updateMeetingTypeStatus, createMeetingType } from '../../api/admin.ts'
 import { COLORS } from '../../theme.ts'
 
 const cellStyle: React.CSSProperties = {
@@ -34,7 +34,7 @@ export default function MeetingTypesPage() {
     }: {
       meetingTypeId: string
       isActive: boolean
-    }) => updateMeetingStatus(adminSlug!, meetingTypeId, { isConfirmed: isActive }),
+    }) => updateMeetingTypeStatus(adminSlug!, meetingTypeId, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting-types', adminSlug] })
     },

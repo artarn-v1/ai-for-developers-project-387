@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"time"
@@ -160,6 +161,10 @@ func (h *AdminHandler) updateMeetingTypeStatus(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := h.mtRepo.UpdateStatus(meetingTypeID, body.IsActive); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, "meeting type not found", http.StatusNotFound)
+			return
+		}
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -225,6 +230,10 @@ func (h *AdminHandler) updateMeetingStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err := h.mRepo.UpdateStatus(meetingID, body.IsConfirmed); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, "meeting not found", http.StatusNotFound)
+			return
+		}
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

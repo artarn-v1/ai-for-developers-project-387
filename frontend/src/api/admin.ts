@@ -5,6 +5,7 @@ type MeetingTypeResponse = components['schemas']['Admin.MeetingTypeResponse']
 type CreateMeetingTypeRequest = components['schemas']['Admin.CreateMeetingTypeRequest']
 type MeetingResponse = components['schemas']['Admin.MeetingResponse']
 type MeetingStatusUpdate = components['schemas']['Admin.MeetingStatusUpdate']
+type MeetingTypeStatusUpdate = components['schemas']['Admin.MeetingTypeStatusUpdate']
 
 export function getMeetingTypes(adminSlug: string) {
   return api.get<MeetingTypeResponse[]>(
@@ -47,6 +48,17 @@ export function updateMeetingStatus(
 ) {
   return api.patch<MeetingResponse>(
     `/admin/${adminSlug}/meetings/${meetingId}`,
+    body,
+  )
+}
+
+export function updateMeetingTypeStatus(
+  adminSlug: string,
+  meetingTypeId: string,
+  body: MeetingTypeStatusUpdate,
+) {
+  return api.patch<MeetingTypeResponse>(
+    `/admin/${adminSlug}/meeting-types/${meetingTypeId}`,
     body,
   )
 }

@@ -1,6 +1,7 @@
 package sqlx
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -73,8 +74,18 @@ func (r *MeetingRepo) Create(m *model.Meeting) error {
 }
 
 func (r *MeetingRepo) UpdateStatus(id string, isConfirmed bool) error {
-	_, err := r.db.Exec("UPDATE meetings SET is_confirmed = $1 WHERE id = $2", isConfirmed, id)
-	return err
+	res, err := r.db.Exec("UPDATE meetings SET is_confirmed = $1 WHERE id = $2", isConfirmed, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *MeetingRepo) GetByID(id string) (*model.Meeting, error) {

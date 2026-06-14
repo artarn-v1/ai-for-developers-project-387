@@ -1,6 +1,8 @@
 package sqlx
 
 import (
+	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/hexlet/meeting-booking/backend/internal/model"
@@ -59,8 +61,18 @@ func (r *MeetingTypeRepo) Create(mt *model.MeetingType) error {
 }
 
 func (r *MeetingTypeRepo) UpdateStatus(id string, isActive bool) error {
-	_, err := r.db.Exec("UPDATE meeting_types SET is_active = $1 WHERE id = $2", isActive, id)
-	return err
+	res, err := r.db.Exec("UPDATE meeting_types SET is_active = $1 WHERE id = $2", isActive, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 var _ repository.MeetingTypeRepository = (*MeetingTypeRepo)(nil)
