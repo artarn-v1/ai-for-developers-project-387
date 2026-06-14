@@ -352,7 +352,11 @@ export interface operations {
     };
     AdminMeetings_list: {
         parameters: {
-            query?: never;
+            query?: {
+                dateStartFrom?: string;
+                dateStartTo?: string;
+                isConfirmed?: boolean;
+            };
             header?: never;
             path: {
                 adminSlug: string;

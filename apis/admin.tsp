@@ -97,7 +97,12 @@ interface AdminMeetingTypes {
 @route("/admin/{adminSlug}/meetings")
 interface AdminMeetings {
   @get
-  list(@path adminSlug: string): MeetingResponse[];
+  list(
+    @path adminSlug: string,
+    @query dateStartFrom?: utcDateTime,
+    @query dateStartTo?: utcDateTime,
+    @query isConfirmed?: boolean,
+  ): MeetingResponse[];
 }
 
 @route("/admin/{adminSlug}/meetings/{meetingId}")
