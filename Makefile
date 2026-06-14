@@ -1,4 +1,4 @@
-# ---- Install ----
+# ---- Common ----
 
 install:
 	npm ci
@@ -6,13 +6,21 @@ install:
 
 install-all: install
 
-frontend-install:
-	cd frontend && npm ci
+# ---- TypeScript ----
 
 api-install:
 	npm ci
 
+api-compile:
+	npx tsp compile .
+
 # ---- Frontend ----
+
+frontend-install:
+	cd frontend && npm ci
+
+frontend-env:
+	cp -n frontend/.env.example frontend/.env
 
 frontend-dev:
 	cd frontend && npm run dev
@@ -20,13 +28,11 @@ frontend-dev:
 frontend-build:
 	cd frontend && npm run build
 
-frontend-generate-types:
-	cd frontend && npm run generate:types
-
 frontend-preview:
 	cd frontend && npm run preview
 
-# ---- Mock ----
+frontend-generate-types:
+	cd frontend && npm run generate:types
 
 mock:
 	cd frontend && npm run mock
@@ -38,6 +44,9 @@ dev-full:
 
 backend-install:
 	cd backend && go mod tidy
+
+backend-env:
+	cp -n backend/.env.example backend/.env
 
 backend-build:
 	cd backend && go build ./cmd/server
@@ -54,18 +63,7 @@ backend-migrate:
 backend-migrate-create:
 	cd backend && migrate create -ext sql -dir migrations -seq $(name)
 
-backend-env:
-	cp -n backend/.env.example backend/.env
-
-frontend-env:
-	cp -n frontend/.env.example frontend/.env
-
-# ---- API (TypeSpec) ----
-
-api-compile:
-	npx tsp compile .
-
-.PHONY: install install-all frontend-install api-install
-.PHONY: frontend-dev frontend-build frontend-generate-types frontend-preview
-.PHONY: mock dev-full api-compile
-.PHONY: backend-install backend-build backend-run backend-lint backend-migrate backend-migrate-create backend-env frontend-env
+.PHONY: install install-all
+.PHONY: api-install api-compile
+.PHONY: frontend-install frontend-env frontend-dev frontend-build frontend-preview frontend-generate-types mock dev-full
+.PHONY: backend-install backend-env backend-build backend-run backend-lint backend-migrate backend-migrate-create
