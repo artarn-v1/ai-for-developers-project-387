@@ -1,0 +1,44 @@
+# ---- Install ----
+
+install:
+	npm ci
+	cd frontend && npm ci
+
+install-all: install
+
+frontend-install:
+	cd frontend && npm ci
+
+api-install:
+	npm ci
+
+# ---- Frontend ----
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
+
+frontend-generate-types:
+	cd frontend && npm run generate:types
+
+frontend-preview:
+	cd frontend && npm run preview
+
+# ---- Mock ----
+
+mock:
+	cd frontend && npm run mock
+
+dev-full:
+	cd frontend && npm run dev:full
+
+# ---- API (TypeSpec) ----
+
+api-compile:
+	npx tsp compile .
+
+.PHONY: install install-all frontend-install api-install
+.PHONY: frontend-dev frontend-build frontend-generate-types frontend-preview
+.PHONY: mock dev-full api-compile
