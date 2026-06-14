@@ -2,11 +2,12 @@
 
 ## Обзор
 
-Meeting Booking Service — монорепозиторий из двух пакетов:
+Meeting Booking Service — монорепозиторий из трёх пакетов:
 
 | Директория | Технологии | Входная точка / назначение |
 |-----------|------|----------------------|
 | корень | TypeSpec 1.12 | `main.tsp` — спецификация API → OpenAPI 3.1.0 YAML |
+| `backend/` | Go 1.26 + chi v5 + sqlx + PostgreSQL | `backend/cmd/server/main.go` |
 | `frontend/` | React 19 + Vite + Mantine 9 + TanStack Query 5 + React Router v7 | `frontend/src/main.tsx` |
 
 ## Рабочий процесс
@@ -28,6 +29,10 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 | `make frontend-build` | `cd frontend && npm run build` (сначала `tsc -b`) |
 | `make frontend-preview` | `cd frontend && npm run preview` (Vite preview продакшн-сборки) |
 | `make mock` | `cd frontend && npx prism mock ../tsp-output/schema/openapi.yaml -p 8080` |
+| `make backend-install` | `cd backend && go mod tidy` |
+| `make backend-build` | `cd backend && go build ./cmd/server` |
+| `make backend-run` | `cd backend && go run ./cmd/server` |
+| `make backend-lint` | `cd backend && go vet ./...` |
 
 Только фронтенд: `cd frontend && npm run lint` (ESLint).
 
@@ -35,6 +40,7 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 
 - `VITE_API_URL` — базовый URL API (по умолчанию `http://localhost:8080`)
 - Vite резолвит импорты `@/` в `frontend/src/`
+- Бэкенд: `PORT` (по умолчанию `8080`), `DATABASE_URL` (по умолчанию `postgres://localhost:5432/meeting_booking?sslmode=disable`)
 
 ## Соглашения по коду
 
@@ -49,6 +55,7 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 - **В проекте нет тестов** — ни одной тестовой зависимости или скрипта. При добавлении функционала тесты нужно писать с нуля.
 - **Prism mock-сервер не сохраняет состояние** между запросами. Любые созданные данные живут только в рамках одного запроса.
 - **TypeScript использует project references** (`tsconfig.json` → `tsconfig.app.json` + `tsconfig.node.json`). `tsc -b` собирает оба.
+- **Бэкенд требует PostgreSQL** — применить миграции: `migrate -path backend/migrations -database "$DATABASE_URL" up`.
 
 ## Архитектура
 
@@ -56,3 +63,5 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 - **TypeSpec API** (`apis/admin.tsp`, `apis/user.tsp`) определяют роуты `/admin/{adminSlug}` и `/client/{ownerSlug}`
 - **API-клиенты фронтенда** в `frontend/src/api/` используют сгенерированные из OpenAPI типы
 - **Роуты** зеркалируют API: `/admin/:adminSlug/*` (управление) и `/client/:ownerSlug/*` (бронирование)
+- **Бэкенд** (`backend/`): Go 1.26, chi v5, sqlx + PostgreSQL, миграции в `backend/migrations/`
+- **Доменный язык** описан в `CONTEXT.md` — читать для понимания терминов (Owner, MeetingType, Participant, Meeting)
