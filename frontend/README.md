@@ -1,47 +1,48 @@
-# frontend
+# Meeting Booking Service — Frontend
+
+React-клиент для сервиса бронирования встреч. Две роли: **администратор** (управление типами встреч) и **клиент** (бронирование слотов).
 
 ## Стек
 
-- **Vite** — сборщик (алиас `@/` → `src/`)
-- **React 19** — UI-библиотека
-- **TypeScript** — типизация (strict mode)
+- **Vite 8** — сборщик (алиас `@/` → `src/`)
+- **React 19** — UI
+- **TypeScript 5.9** — strict mode + `verbatimModuleSyntax`
 - **React Router v7** — клиентский роутинг
-- **Mantine v9** — UI-компоненты (+ `@mantine/dates`, `@mantine/form`, `@mantine/hooks`, `@mantine/code-highlight`)
-- **TanStack Query v5** — работа с API
+- **Mantine v9** — UI-компоненты (`@mantine/core`, `@mantine/dates`, `@mantine/form`, `@mantine/hooks`, `@mantine/code-highlight`)
+- **TanStack Query v5** — запросы к API
 - **dayjs** — работа с датами
+- **openapi-typescript** — генерация типов из OpenAPI-спецификации
 - **PostCSS** + `postcss-preset-mantine` — стилизация
-- **openapi-typescript** — генерация типов из OpenAPI
+- **ESLint** + `typescript-eslint` — линтинг
+- **@stoplight/prism-cli** — mock-сервер для разработки без бэкенда
 
-## Архитектура
+## Структура
 
 ```
 src/
-├── api/            # API-клиенты (admin.ts, client.ts, user.ts)
-├── components/     # Переиспользуемые компоненты (CodeBlock.tsx)
-├── lib/            # Утилиты (datetime.ts)
+├── api/
+│   ├── client.ts             — HTTP-клиент (fetch + ApiError)
+│   ├── admin.ts              — API-вызовы для админки
+│   └── user.ts               — API-вызовы для бронирования
+├── components/
+│   └── CodeBlock.tsx         — подсветка кода (JSON, curl)
+├── lib/
+│   └── datetime.ts           — утилиты для работы с датами
 ├── routes/
-│   ├── admin/      # Страницы админки
-│   └── client/     # Страницы бронирования
-├── types/          # Сгенерированные типы API (api.ts)
-├── theme.ts        # Дизайн-токены (COLORS)
-├── App.tsx         # Роутинг
-└── main.tsx        # Входная точка
-```
-
-## Переменные окружения
-
-- `VITE_API_URL` — базовый URL API (по умолчанию `http://localhost:8080`)
-
-## Команды
-
-```bash
-npm run dev              # запустить dev-сервер
-npm run build            # tsc -b && vite build
-npm run preview          # превью билда локально
-npm run lint             # ESLint
-npm run mock             # Prism mock-сервер (localhost:8080)
-npm run dev:full         # dev-сервер + mock (concurrently)
-npm run generate:types   # генерация типов из OpenAPI → src/types/api.ts
+│   ├── admin/
+│   │   ├── AdminLayout.tsx   — layout админки (навигация)
+│   │   ├── MeetingTypesPage.tsx — управление типами встреч
+│   │   └── MeetingsPage.tsx  — список встреч (подтверждение)
+│   ├── client/
+│   │   ├── ClientLayout.tsx  — layout бронирования
+│   │   ├── MeetingTypesPage.tsx — выбор типа встречи
+│   │   └── CalendarPage.tsx  — календарь + бронь слота
+│   └── NotFound.tsx          — 404
+├── types/
+│   └── api.ts                — сгенерированные типы из OpenAPI
+├── theme.ts                  — дизайн-токены (COLORS)
+├── App.tsx                   — роутинг
+└── main.tsx                  — входная точка (QueryClient, MantineProvider)
 ```
 
 ## Роуты
@@ -49,16 +50,64 @@ npm run generate:types   # генерация типов из OpenAPI → src/ty
 | URL | Страница | Описание |
 |-----|----------|----------|
 | `/` | — | Редирект на `/admin/demo` |
-| `/admin/:adminSlug` | AdminLayout → редирект на `meeting-types` | Layout админки |
-| `/admin/:adminSlug/meeting-types` | MeetingTypesPage | Типы встреч (управление) |
-| `/admin/:adminSlug/meetings` | MeetingsPage | Список встреч (подтверждение/отклонение) |
-| `/client/:ownerSlug` | ClientLayout → ClientMeetingTypesPage | Типы встреч для бронирования |
+| `/admin/:adminSlug` | AdminLayout | Layout админки (редирект на `meeting-types`) |
+| `/admin/:adminSlug/meeting-types` | MeetingTypesPage | Типы встреч (создание, вкл/выкл) |
+| `/admin/:adminSlug/meetings` | MeetingsPage | Список встреч (фильтр, подтверждение/отклонение) |
+| `/client/:ownerSlug` | ClientMeetingTypesPage | Типы встреч для бронирования |
 | `/client/:ownerSlug/:meetingTypeSlug` | CalendarPage | Календарь и выбор слота |
 | `*` | NotFound | 404 |
 
 Примеры:
-
 - `/admin/demo/meeting-types`
 - `/admin/john/meetings`
 - `/client/john`
 - `/client/john/15min`
+
+## Дизайн
+
+Тёмная тема через константы в `theme.ts`:
+
+| Токен | Значение | Назначение |
+|-------|----------|------------|
+| `bg` | `#18181b` | Фон страницы |
+| `cardBg` | `#27272a` | Фон карточек |
+| `text` | `#f4f4f5` | Основной текст |
+| `slotAvailable` | `#22c55e` | Свободный слот |
+| `slotOccupied` | `#52525b` | Занятый слот |
+
+## Переменные окружения
+
+| Переменная | По умолчанию | Описание |
+|-----------|-------------|----------|
+| `VITE_API_URL` | `http://localhost:8080` | Базовый URL API |
+
+Скопируй `.env.example`:
+
+```bash
+make frontend-env
+cp -n frontend/.env.example frontend/.env
+```
+
+## Команды
+
+```bash
+# Разработка
+make frontend-dev                          # npm run dev (Vite)
+make dev-full                              # mock + dev одновременно
+
+# Сборка
+make frontend-build                        # tsc -b && vite build
+make frontend-preview                      # превью продакшн-сборки
+
+# Генерация типов
+make frontend-generate-types               # openapi-typescript → api.ts
+
+# Mock-сервер (без бэкенда)
+make mock                                  # Prism на порту 8080
+
+# Линтинг
+cd frontend && npm run lint                # ESLint
+
+# Установка зависимостей
+make frontend-install                      # npm ci
+```
