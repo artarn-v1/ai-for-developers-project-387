@@ -72,6 +72,11 @@ model MeetingStatusUpdate {
   isConfirmed: boolean;
 }
 
+model MeetingTypeStatusUpdate {
+  @example(true)
+  isActive: boolean;
+}
+
 @route("/admin/{adminSlug}/meeting-types")
 interface AdminMeetingTypes {
   @get
@@ -79,6 +84,14 @@ interface AdminMeetingTypes {
 
   @post
   create(@path adminSlug: string, @body body: CreateMeetingTypeRequest): MeetingTypeResponse;
+
+  @route("{meetingTypeId}")
+  @patch
+  updateStatus(
+    @path adminSlug: string,
+    @path meetingTypeId: string,
+    @body body: MeetingTypeStatusUpdate
+  ): MeetingTypeResponse;
 }
 
 @route("/admin/{adminSlug}/meetings")

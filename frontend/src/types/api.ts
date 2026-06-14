@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/{adminSlug}/meeting-types/{meetingTypeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminMeetingTypes_updateStatus"];
+        trace?: never;
+    };
     "/admin/{adminSlug}/meetings": {
         parameters: {
             query?: never;
@@ -131,13 +147,26 @@ export interface components {
         "Admin.MeetingTypeResponse": {
             /** Format: uuid */
             id: string;
+            /** @example Личное напоминание про масло */
             name: string;
+            /** @example Напоминание о смене масла в автомобиле */
             description: string;
+            /** @example 09:00 */
             availableFrom: string;
+            /** @example 18:00 */
             availableTo: string;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @example 10
+             */
             durationMinutes: number;
+            /** @example personal-oil-change */
             slug: string;
+            /** @example true */
+            isActive: boolean;
+        };
+        "Admin.MeetingTypeStatusUpdate": {
+            /** @example true */
             isActive: boolean;
         };
         "Client.ClientMeetingResponse": {
@@ -280,6 +309,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Admin.CreateMeetingTypeRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Admin.MeetingTypeResponse"];
+                };
+            };
+        };
+    };
+    AdminMeetingTypes_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adminSlug: string;
+                meetingTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Admin.MeetingTypeStatusUpdate"];
             };
         };
         responses: {
