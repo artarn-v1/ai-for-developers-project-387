@@ -11,6 +11,10 @@ model ClientOwnerResponse {
 
   @example("evgeny")
   clientSlug: string;
+
+  // IANA time zone identifier the owner's availability is defined in.
+  @example("Europe/Moscow")
+  timeZone: string;
 }
 
 model ClientMeetingTypeResponse {
@@ -23,9 +27,11 @@ model ClientMeetingTypeResponse {
   description: string;
 
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+  @example("09:00")
   availableFrom: string;
 
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+  @example("18:00")
   availableTo: string;
 
   @example(10)
@@ -53,7 +59,7 @@ model CreateParticipantRequest {
 model CreateMeetingRequest {
   startDateTime: utcDateTime;
 
-  comment: string;
+  comment?: string;
 
   participants: CreateParticipantRequest[];
 }
@@ -62,6 +68,13 @@ model CreateMeetingRequest {
 interface ClientMeetingTypes {
   @get
   listActive(@path ownerSlug: string): ClientMeetingTypeResponse[];
+
+  @get
+  @route("/{meetingTypeSlug}")
+  getBySlug(
+    @path ownerSlug: string,
+    @path meetingTypeSlug: string
+  ): ClientMeetingTypeResponse;
 }
 
 @route("/client/{ownerSlug}/meeting-types/{meetingTypeSlug}/meetings")

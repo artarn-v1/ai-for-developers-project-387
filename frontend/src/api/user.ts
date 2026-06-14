@@ -11,6 +11,12 @@ export function getActiveMeetingTypes(ownerSlug: string) {
   )
 }
 
+export function getMeetingType(ownerSlug: string, meetingTypeSlug: string) {
+  return api.get<ClientMeetingTypeResponse>(
+    `/client/${ownerSlug}/meeting-types/${meetingTypeSlug}`,
+  )
+}
+
 export function getOccupiedSlots(
   ownerSlug: string,
   meetingTypeSlug: string,

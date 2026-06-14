@@ -15,27 +15,24 @@ import {
   CloseButton,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { useState, useMemo, useCallback } from 'react'
-import { getActiveMeetingTypes, getOccupiedSlots, createMeeting } from '../../api/user.ts'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { getMeetingType, getOccupiedSlots, createMeeting } from '../../api/user.ts'
+import type { components } from '../../types/api.ts'
+import { COLORS } from '../../theme.ts'
+import {
+  wallClockInZone,
+  todayInZone,
+  datePartsInZone,
+  formatInZone,
+} from '../../lib/datetime.ts'
+
+type ClientMeetingResponse = components['schemas']['Client.ClientMeetingResponse']
 
 interface TimeSlot {
   time: string
   dateTime: Date
   isOccupied: boolean
   isPast: boolean
-}
-
-const COLORS = {
-  bg: '#18181b',
-  cardBg: '#27272a',
-  border: '#3f3f46',
-  text: '#f4f4f5',
-  mutedText: '#a1a1aa',
-  slotAvailable: '#22c55e',
-  slotOccupied: '#52525b',
-  selectedSlot: '#22c55e',
-  inputBg: '#27272a',
-  inputBorder: '#3f3f46',
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -61,31 +58,19 @@ function formatTimeRange(time: string, durationMinutes: number): string {
   return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' - ' + String(endH).padStart(2, '0') + ':' + String(endMin).padStart(2, '0')
 }
 
-function formatDateTime(iso: string): string {
-  const d = new Date(iso)
-  const day = DAYS[d.getDay()]
-  const month = MONTHS[d.getMonth()]
-  let hours = d.getHours()
-  const minutes = d.getMinutes()
-  const ampm = hours >= 12 ? 'pm' : 'am'
-  const displayH = hours % 12 || 12
-  const displayM = String(minutes).padStart(2, '0')
-  return day + ', ' + month + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + displayH + ':' + displayM + ' ' + ampm
-}
-
 export default function BookingPage() {
   const { ownerSlug, meetingTypeSlug } = useParams<{ ownerSlug: string; meetingTypeSlug: string }>()
   const queryClient = useQueryClient()
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedDate, setSelectedDate] = useState<{ year: number; month: number; date: number } | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [showOverlay, setShowOverlay] = useState(false)
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
   const [confirmedBooking, setConfirmedBooking] = useState<{ startDateTime: string; endDateTime: string } | null>(null)
 
-  const { data: types, isLoading: typesLoading, error: typesError } = useQuery({
-    queryKey: ['client-meeting-types', ownerSlug],
-    queryFn: () => getActiveMeetingTypes(ownerSlug!),
-    enabled: !!ownerSlug,
+  const { data: meetingType, isLoading: typeLoading, error: typeError } = useQuery({
+    queryKey: ['client-meeting-type', ownerSlug, meetingTypeSlug],
+    queryFn: () => getMeetingType(ownerSlug!, meetingTypeSlug!),
+    enabled: !!ownerSlug && !!meetingTypeSlug,
   })
 
   const { data: occupiedMeetings, isLoading: slotsLoading, error: slotsError } = useQuery({
@@ -94,18 +79,26 @@ export default function BookingPage() {
     enabled: !!ownerSlug && !!meetingTypeSlug,
   })
 
-  const meetingType = types?.find((t) => t.slug === meetingTypeSlug)
+  const ownerTimeZone = meetingType?.owner.timeZone
+
+  // #10: keep "now" ticking so past slots expire without a manual re-select.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   const form = useForm({
     mode: 'uncontrolled',
     initialValues: {
-      participantName: '',
-      participantEmail: '',
       comment: '',
+      participants: [{ name: '', email: '' }],
     },
     validate: {
-      participantName: (val) => (val.length > 0 ? null : 'Name is required'),
-      participantEmail: (val) => (/^\S+@\S+\.\S+$/.test(val) ? null : 'Invalid email'),
+      participants: {
+        name: (val: string) => (val.trim().length > 0 ? null : 'Name is required'),
+        email: (val: string) => (/^\S+@\S+\.\S+$/.test(val) ? null : 'Invalid email'),
+      },
     },
   })
 
@@ -113,10 +106,11 @@ export default function BookingPage() {
     mutationFn: (values: typeof form.values) =>
       createMeeting(ownerSlug!, meetingTypeSlug!, {
         startDateTime: selectedSlot!.dateTime.toISOString(),
-        comment: values.comment,
-        participants: [
-          { name: values.participantName, email: values.participantEmail },
-        ],
+        comment: values.comment.trim() || undefined,
+        participants: values.participants.map((p) => ({
+          name: p.name.trim(),
+          email: p.email.trim(),
+        })),
       }),
     onSuccess: (data) => {
       setBookingConfirmed(true)
@@ -124,13 +118,19 @@ export default function BookingPage() {
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
       })
+      // #12: optimistically mark the new slot as occupied so it greys out
+      // immediately, without waiting for the refetch round-trip.
+      queryClient.setQueryData<ClientMeetingResponse[]>(
+        ['client-occupied-slots', ownerSlug, meetingTypeSlug],
+        (old) => [...(old ?? []), data],
+      )
       queryClient.invalidateQueries({ queryKey: ['client-occupied-slots', ownerSlug, meetingTypeSlug] })
     },
   })
 
-  // Generate time slots for selected date
+  // Generate time slots for selected date (interpreted in the owner's time zone).
   const timeSlots = useMemo((): TimeSlot[] => {
-    if (!selectedDate || !meetingType) return []
+    if (!selectedDate || !meetingType || !ownerTimeZone) return []
 
     const [fromH, fromM] = meetingType.availableFrom.split(':').map(Number)
     const [toH, toM] = meetingType.availableTo.split(':').map(Number)
@@ -139,48 +139,38 @@ export default function BookingPage() {
     const startMinutes = fromH * 60 + fromM
     const endMinutes = toH * 60 + toM
 
-    const selectedYear = selectedDate.getFullYear()
-    const selectedMonth = selectedDate.getMonth()
+    const { year, month, date } = selectedDate
 
-    // Get occupied meetings for the selected date
-    const occupied = (occupiedMeetings ?? [])
+    // Occupied intervals overlapping the selected owner-zone calendar day.
+    const occupiedIntervals = (occupiedMeetings ?? [])
       .filter((m) => {
-        const mDate = new Date(m.startDateTime)
-        return mDate.getDate() === selectedDate.getDate()
-          && mDate.getMonth() === selectedMonth
-          && mDate.getFullYear() === selectedYear
+        const parts = datePartsInZone(m.startDateTime, ownerTimeZone)
+        return parts.date === date && parts.month === month && parts.year === year
       })
-
-    const occupiedIntervals = occupied.map((m) => ({
-      start: new Date(m.startDateTime).getTime(),
-      end: new Date(m.endDateTime).getTime(),
-    }))
+      .map((m) => ({
+        start: new Date(m.startDateTime).getTime(),
+        end: new Date(m.endDateTime).getTime(),
+      }))
 
     const slots: TimeSlot[] = []
-    const now = Date.now()
 
     for (let min = startMinutes; min + duration <= endMinutes; min += duration) {
       const h = Math.floor(min / 60)
       const m = min % 60
-      const slotDateTime = new Date(selectedYear, selectedMonth, selectedDate.getDate(), h, m)
+      const slotDateTime = wallClockInZone(year, month, date, h, m, ownerTimeZone)
       const slotTime = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
 
       const slotStart = slotDateTime.getTime()
       const slotEnd = slotStart + duration * 60 * 1000
 
       const isOccupied = occupiedIntervals.some((o) => slotStart < o.end && slotEnd > o.start)
-      const isPast = slotDateTime.getTime() < now
+      const isPast = slotStart < now
 
-      slots.push({
-        time: slotTime,
-        dateTime: slotDateTime,
-        isOccupied,
-        isPast,
-      })
+      slots.push({ time: slotTime, dateTime: slotDateTime, isOccupied, isPast })
     }
 
     return slots
-  }, [selectedDate, meetingType, occupiedMeetings])
+  }, [selectedDate, meetingType, ownerTimeZone, occupiedMeetings, now])
 
   // Calendar state
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -188,70 +178,48 @@ export default function BookingPage() {
     return { year: now.getFullYear(), month: now.getMonth() }
   })
 
-  // Generate calendar days
+  // Generate calendar days (selectable window computed in owner's time zone)
   const calendarDays = useMemo(() => {
     const { year, month } = calendarMonth
     const daysInMonth = getDaysInMonth(year, month)
     const firstDay = getFirstDayOfMonth(year, month)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const maxDate = new Date(today)
-    maxDate.setDate(maxDate.getDate() + 14)
-    maxDate.setHours(0, 0, 0, 0)
+
+    const todayParts = ownerTimeZone
+      ? todayInZone(ownerTimeZone)
+      : (() => {
+          const n = new Date()
+          return { year: n.getFullYear(), month: n.getMonth(), date: n.getDate() }
+        })()
+    const today = new Date(todayParts.year, todayParts.month, todayParts.date)
+    const maxDate = new Date(todayParts.year, todayParts.month, todayParts.date + 14)
 
     const days: { date: number; isCurrentMonth: boolean; isSelectable: boolean }[] = []
 
-    // Previous month padding
     const prevMonth = month === 0 ? 11 : month - 1
     const prevYear = month === 0 ? year - 1 : year
     const prevMonthDays = getDaysInMonth(prevYear, prevMonth)
 
     for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({
-        date: prevMonthDays - i,
-        isCurrentMonth: false,
-        isSelectable: false,
-      })
+      days.push({ date: prevMonthDays - i, isCurrentMonth: false, isSelectable: false })
     }
 
-    // Current month
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d)
       const isSelectable = date >= today && date <= maxDate
-      days.push({
-        date: d,
-        isCurrentMonth: true,
-        isSelectable,
-      })
+      days.push({ date: d, isCurrentMonth: true, isSelectable })
     }
 
-    // Next month padding
     const remaining = 42 - days.length
-
     for (let d = 1; d <= remaining; d++) {
-      days.push({
-        date: d,
-        isCurrentMonth: false,
-        isSelectable: false,
-      })
+      days.push({ date: d, isCurrentMonth: false, isSelectable: false })
     }
 
     return days
-  }, [calendarMonth])
+  }, [calendarMonth, ownerTimeZone])
 
   const handleDateSelect = useCallback((date: number) => {
-    const newDate = new Date(calendarMonth.year, calendarMonth.month, date)
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    if (newDate >= todayStart) {
-      const maxDate = new Date()
-      maxDate.setDate(maxDate.getDate() + 14)
-      maxDate.setHours(0, 0, 0, 0)
-      if (newDate <= maxDate) {
-        setSelectedDate(newDate)
-        setSelectedSlot(null)
-      }
-    }
+    setSelectedDate({ year: calendarMonth.year, month: calendarMonth.month, date })
+    setSelectedSlot(null)
   }, [calendarMonth])
 
   const handleSlotClick = useCallback((slot: TimeSlot) => {
@@ -259,17 +227,13 @@ export default function BookingPage() {
       setSelectedSlot(slot)
       setShowOverlay(true)
       setBookingConfirmed(false)
-      form.setValues({
-        participantName: '',
-        participantEmail: '',
-        comment: '',
-      })
+      form.reset()
     }
-  }, [])
+  }, [form])
 
   const handleConfirm = useCallback((values: typeof form.values) => {
     mutation.mutate(values)
-  }, [mutation])
+  }, [mutation, form])
 
   const handleBack = useCallback(() => {
     setShowOverlay(false)
@@ -277,9 +241,9 @@ export default function BookingPage() {
     setSelectedSlot(null)
   }, [])
 
-  // Pre-computed text values (no template literals in JSX)
+  // Pre-computed text values
   const selectedDateFormatted = selectedDate
-    ? DAYS[selectedDate.getDay()] + ', ' + MONTHS[selectedDate.getMonth()] + ' ' + selectedDate.getDate() + ', ' + selectedDate.getFullYear()
+    ? DAYS[new Date(selectedDate.year, selectedDate.month, selectedDate.date).getDay()] + ', ' + MONTHS[selectedDate.month] + ' ' + selectedDate.date + ', ' + selectedDate.year
     : ''
 
   const headerTime = meetingType
@@ -288,7 +252,6 @@ export default function BookingPage() {
       : meetingType.availableFrom + ' - ' + meetingType.availableTo)
     : ''
 
-  // Overlay style computed
   const overlayContainerStyle: React.CSSProperties = {
     width: '100%',
     maxWidth: 800,
@@ -319,9 +282,39 @@ export default function BookingPage() {
     fontWeight: 500,
   }
 
-  if (typesLoading || slotsLoading) return <Loader />
-  if (typesError || slotsError) return <Alert color="red">Ошибка загрузки данных</Alert>
+  if (typeLoading || slotsLoading) return <Loader />
+  if (typeError || slotsError) return <Alert color="red">Ошибка загрузки данных</Alert>
   if (!meetingType) return <Alert color="red">Тип встречи не найден</Alert>
+
+  // #13: dynamic participants list
+  const participantFields = form.getValues().participants.map((_, index) => (
+    <Group key={index} align="flex-start" gap={8} wrap="nowrap">
+      <TextInput
+        style={{ flex: 1 }}
+        label={index === 0 ? 'Name *' : undefined}
+        placeholder="John Doe"
+        key={form.key(`participants.${index}.name`)}
+        {...form.getInputProps(`participants.${index}.name`)}
+        styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
+      />
+      <TextInput
+        style={{ flex: 1 }}
+        label={index === 0 ? 'Email *' : undefined}
+        placeholder="john@example.com"
+        key={form.key(`participants.${index}.email`)}
+        {...form.getInputProps(`participants.${index}.email`)}
+        styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
+      />
+      {form.getValues().participants.length > 1 && (
+        <CloseButton
+          mt={index === 0 ? 28 : 4}
+          onClick={() => form.removeListItem('participants', index)}
+          aria-label="Remove participant"
+          style={{ color: COLORS.mutedText, flexShrink: 0 }}
+        />
+      )}
+    </Group>
+  ))
 
   return (
     <Box style={{
@@ -344,12 +337,11 @@ export default function BookingPage() {
         gap: 16,
         flexShrink: 0,
       }}>
-        {/* Avatar */}
         <Box style={{
           width: 40,
           height: 40,
           borderRadius: 20,
-          background: '#3f6212',
+          background: COLORS.avatarBg,
           color: '#fff',
           display: 'flex',
           alignItems: 'center',
@@ -360,17 +352,18 @@ export default function BookingPage() {
           {meetingType.owner.name.charAt(0).toUpperCase()}
         </Box>
 
-        {/* Meeting name */}
         <Title order={4} style={{ color: COLORS.text, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
           {meetingType.name}
         </Title>
 
-        {/* Duration */}
         <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>
           {meetingType.durationMinutes + 'm'}
         </Text>
 
-        {/* Selected date/time info */}
+        <Text style={{ color: COLORS.mutedText, fontSize: 12, margin: 0 }}>
+          {ownerTimeZone}
+        </Text>
+
         {selectedDate && (
           <Text style={{ color: COLORS.mutedText, fontSize: 13, margin: 0, lineHeight: 1.5 }}>
             {selectedDateFormatted}
@@ -388,7 +381,6 @@ export default function BookingPage() {
         gap: 24,
         overflowY: 'auto',
       }}>
-        {/* Month header */}
         <Group style={{ margin: 0, justifyContent: 'space-between' }}>
           <Text style={{ margin: 0, fontSize: 18, fontWeight: 600, color: COLORS.text }}>
             {MONTHS[calendarMonth.month] + ' ' + calendarMonth.year}
@@ -427,7 +419,6 @@ export default function BookingPage() {
 
         {/* Calendar grid */}
         <Box>
-          {/* Day headers */}
           <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
             {DAYS_SHORT.map((d) => (
               <Text key={d} style={{
@@ -441,22 +432,22 @@ export default function BookingPage() {
               </Text>
             ))}
           </Box>
-          {/* Date cells */}
           <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
             {calendarDays.map((day, idx) => {
-              const isSelected = selectedDate?.getDate() === day.date
-                && selectedDate.getMonth() === calendarMonth.month
-                && selectedDate.getFullYear() === calendarMonth.year
+              const isSelected = selectedDate?.date === day.date
+                && selectedDate.month === calendarMonth.month
+                && selectedDate.year === calendarMonth.year
+                && day.isCurrentMonth
 
               const cellBg = isSelected
                 ? '#fff'
                 : day.isSelectable
-                  ? '#52525b'
+                  ? COLORS.slotOccupied
                   : day.isCurrentMonth
-                    ? '#27272a'
+                    ? COLORS.cardBg
                     : 'transparent'
 
-              const cellColor = isSelected ? '#18181b' : day.isSelectable ? COLORS.text : COLORS.mutedText
+              const cellColor = isSelected ? COLORS.bg : day.isSelectable ? COLORS.text : COLORS.mutedText
 
               return (
                 <Box
@@ -488,12 +479,7 @@ export default function BookingPage() {
         {/* Time slots */}
         {selectedDate && (
           <Box>
-            <Text style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: COLORS.text,
-              margin: '0 0 12px 0',
-            }}>
+            <Text style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '0 0 12px 0' }}>
               {headerTime}
             </Text>
             <Stack gap={4}>
@@ -501,8 +487,7 @@ export default function BookingPage() {
                 const isSelected = selectedSlot?.time === slot.time
                 const isDisabled = slot.isOccupied || slot.isPast
 
-                const slotBorderColor = isSelected ? '#22c55e' : COLORS.border
-                const slotBg = isSelected ? '#22c55e' : 'transparent'
+                const slotBg = isSelected ? COLORS.selectedSlot : 'transparent'
                 const slotTextColor = isSelected ? '#fff' : COLORS.text
 
                 return (
@@ -518,7 +503,7 @@ export default function BookingPage() {
                       borderRadius: 8,
                       borderWidth: 1,
                       borderStyle: 'solid',
-                      borderColor: isDisabled ? slotBorderColor : slotBorderColor,
+                      borderColor: isSelected ? COLORS.selectedSlot : COLORS.border,
                       cursor: isDisabled ? 'default' : 'pointer',
                       opacity: isDisabled ? 0.4 : 1,
                       backgroundColor: slotBg,
@@ -554,12 +539,7 @@ export default function BookingPage() {
       </Box>
 
       {/* Overlay: Booking form + Confirmation */}
-      <Transition
-        mounted={showOverlay}
-        transition="fade"
-        duration={200}
-        timingFunction="linear"
-      >
+      <Transition mounted={showOverlay} transition="fade" duration={200} timingFunction="linear">
         {(overlayStyles) => (
           <Overlay
             style={{
@@ -574,32 +554,19 @@ export default function BookingPage() {
             }}
           >
             <Box style={overlayContainerStyle}>
-              {/* Close button */}
               <CloseButton
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  color: COLORS.mutedText,
-                }}
+                style={{ position: 'absolute', top: 16, right: 16, color: COLORS.mutedText }}
                 onClick={handleBack}
               />
 
               {/* Left: meeting info */}
-              <Box style={{
-                width: 200,
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-              }}>
-                {/* Avatar + Name */}
+              <Box style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Box style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Box style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    background: '#3f6212',
+                    background: COLORS.avatarBg,
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -615,19 +582,16 @@ export default function BookingPage() {
                   </Text>
                 </Box>
 
-                {/* Title */}
                 <Title order={4} style={{ color: COLORS.text, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
                   {meetingType.name}
                 </Title>
 
-                {/* Date & time */}
                 {selectedSlot && (
                   <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0, lineHeight: 1.5 }}>
                     {selectedDateFormatted + '\n' + formatTimeRange(selectedSlot.time, meetingType.durationMinutes)}
                   </Text>
                 )}
 
-                {/* Duration */}
                 <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>
                   {meetingType.durationMinutes + 'm'}
                 </Text>
@@ -636,9 +600,8 @@ export default function BookingPage() {
               {/* Right: form or confirmation */}
               <Box style={{ flex: 1 }}>
                 {bookingConfirmed && confirmedBooking ? (
-                  /* Confirmation screen */
                   <Stack gap={16}>
-                    <Title order={3} style={{ color: '#22c55e', fontWeight: 700, margin: 0 }}>
+                    <Title order={3} style={{ color: COLORS.slotAvailable, fontWeight: 700, margin: 0 }}>
                       Booking Confirmed
                     </Title>
 
@@ -647,7 +610,9 @@ export default function BookingPage() {
                     </Text>
 
                     <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-                      {formatDateTime(confirmedBooking.startDateTime) + '\n' + formatDateTime(confirmedBooking.endDateTime)}
+                      {ownerTimeZone
+                        ? formatInZone(confirmedBooking.startDateTime, ownerTimeZone) + '\n' + formatInZone(confirmedBooking.endDateTime, ownerTimeZone)
+                        : ''}
                     </Text>
 
                     <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>
@@ -660,7 +625,6 @@ export default function BookingPage() {
                         setBookingConfirmed(false)
                         setSelectedSlot(null)
                         setSelectedDate(null)
-                        queryClient.invalidateQueries({ queryKey: ['client-occupied-slots', ownerSlug, meetingTypeSlug] })
                       }}
                       style={{ marginTop: 16 }}
                     >
@@ -668,45 +632,29 @@ export default function BookingPage() {
                     </Button>
                   </Stack>
                 ) : (
-                  /* Booking form */
                   <Box component="form" onSubmit={form.onSubmit(handleConfirm)}>
                     <Stack gap={16}>
-                      <TextInput
-                        label="Your name *"
-                        placeholder="John Doe"
-                        required
-                        {...form.getInputProps('participantName')}
-                        styles={{
-                          input: { ...inputInputStyle },
-                          label: { ...inputLabelStyle },
-                        }}
-                      />
-                      <TextInput
-                        label="Email address *"
-                        placeholder="john@example.com"
-                        required
-                        {...form.getInputProps('participantEmail')}
-                        styles={{
-                          input: { ...inputInputStyle },
-                          label: { ...inputLabelStyle },
-                        }}
-                      />
+                      {participantFields}
+
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        onClick={() => form.insertListItem('participants', { name: '', email: '' })}
+                        style={{ alignSelf: 'flex-start' }}
+                      >
+                        + Add participant
+                      </Button>
+
                       <TextInput
                         label="Additional notes"
                         placeholder="Optional note"
+                        key={form.key('comment')}
                         {...form.getInputProps('comment')}
-                        styles={{
-                          input: { ...inputInputStyle },
-                          label: { ...inputLabelStyle },
-                        }}
+                        styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
                       />
 
                       <Group style={{ justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
-                        <Button
-                          variant="subtle"
-                          color={COLORS.mutedText}
-                          onClick={handleBack}
-                        >
+                        <Button variant="subtle" color={COLORS.mutedText} onClick={handleBack}>
                           Back
                         </Button>
                         <Button type="submit" loading={mutation.isPending}>
@@ -715,7 +663,9 @@ export default function BookingPage() {
                       </Group>
 
                       {mutation.isError && (
-                        <Alert color="red">Booking failed. Please try again.</Alert>
+                        <Alert color="red">
+                          {mutation.error instanceof Error ? mutation.error.message : 'Booking failed. Please try again.'}
+                        </Alert>
                       )}
                     </Stack>
                   </Box>

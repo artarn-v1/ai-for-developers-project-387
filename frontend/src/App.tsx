@@ -5,6 +5,7 @@ import MeetingTypesPage from './routes/admin/MeetingTypesPage'
 import MeetingsPage from './routes/admin/MeetingsPage'
 import ClientMeetingTypesPage from './routes/client/MeetingTypesPage'
 import BookingPage from './routes/client/BookingPage'
+import NotFound from './routes/NotFound'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route index element={<ClientMeetingTypesPage />} />
         <Route path=":meetingTypeSlug/book" element={<BookingPage />} />
       </Route>
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

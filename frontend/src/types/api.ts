@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/{ownerSlug}/meeting-types/{meetingTypeSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientMeetingTypes_getBySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/{ownerSlug}/meeting-types/{meetingTypeSlug}/meetings": {
         parameters: {
             query?: never;
@@ -137,7 +153,9 @@ export interface components {
             name: string;
             /** @example Напоминание о смене масла */
             description: string;
+            /** @example 09:00 */
             availableFrom: string;
+            /** @example 18:00 */
             availableTo: string;
             /**
              * Format: int32
@@ -152,11 +170,13 @@ export interface components {
             name: string;
             /** @example evgeny */
             clientSlug: string;
+            /** @example Europe/Moscow */
+            timeZone: string;
         };
         "Client.CreateMeetingRequest": {
             /** Format: date-time */
             startDateTime: string;
-            comment: string;
+            comment?: string;
             participants: components["schemas"]["Client.CreateParticipantRequest"][];
         };
         "Client.CreateParticipantRequest": {
@@ -341,6 +361,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Client.ClientMeetingTypeResponse"][];
+                };
+            };
+        };
+    };
+    ClientMeetingTypes_getBySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ownerSlug: string;
+                meetingTypeSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client.ClientMeetingTypeResponse"];
                 };
             };
         };
