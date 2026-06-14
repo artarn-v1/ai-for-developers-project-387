@@ -67,7 +67,7 @@ export default function CalendarPage() {
   const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState<SelectedDate | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
-  const [mode, setMode] = useState<'calendar' | 'booking'>('calendar')
+  const [mode, setMode] = useState<'calendar' | 'booking' | 'success'>('calendar')
 
   const { data: meetingType, isLoading: typeLoading, error: typeError } = useQuery({
     queryKey: ['client-meeting-type', ownerSlug, meetingTypeSlug],
@@ -222,7 +222,7 @@ export default function CalendarPage() {
       )
       queryClient.invalidateQueries({ queryKey: ['client-occupied-slots', ownerSlug, meetingTypeSlug] })
       setSelectedSlot(null)
-      setMode('calendar')
+      setMode('success')
     },
   })
 
@@ -578,6 +578,54 @@ export default function CalendarPage() {
                   </Alert>
                 )}
               </Stack>
+            </Box>
+          </Box>
+
+          {/* Success view */}
+          <Box style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: mode === 'success' ? 1 : 0,
+            pointerEvents: mode === 'success' ? 'auto' : 'none',
+            transition: 'all 0.15s',
+          }}>
+            <Box style={{
+              textAlign: 'center',
+              padding: '48px 32px',
+              borderRadius: 16,
+              background: COLORS.cardBg,
+              border: '1px solid ' + COLORS.border,
+              maxWidth: 320,
+            }}>
+              <Box style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: '#22c55e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+                fontSize: 28,
+                color: '#fff',
+                fontWeight: 700,
+              }}>
+                ✓
+              </Box>
+              <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: 600, margin: 0 }}>
+                Встреча успешно запланирована
+              </Text>
+              <Button
+                variant="subtle"
+                color={COLORS.mutedText}
+                onClick={() => { setSelectedDate(null); setMode('calendar') }}
+                style={{ marginTop: 24 }}
+              >
+                Back
+              </Button>
             </Box>
           </Box>
         </Box>
