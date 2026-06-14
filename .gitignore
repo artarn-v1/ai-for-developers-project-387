@@ -8,6 +8,9 @@ dist/
 # Dependency directories
 node_modules/
 
+# Environment files
+.env
+
 # Go binaries
 backend/server
 backend/server.exe

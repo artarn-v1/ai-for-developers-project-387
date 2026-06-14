@@ -48,6 +48,12 @@ backend-run:
 backend-lint:
 	cd backend && go vet ./...
 
+backend-env:
+	cp -n backend/.env.example backend/.env
+
+frontend-env:
+	cp -n frontend/.env.example frontend/.env
+
 # ---- API (TypeSpec) ----
 
 api-compile:
@@ -56,4 +62,4 @@ api-compile:
 .PHONY: install install-all frontend-install api-install
 .PHONY: frontend-dev frontend-build frontend-generate-types frontend-preview
 .PHONY: mock dev-full api-compile
-.PHONY: backend-install backend-build backend-run backend-lint
+.PHONY: backend-install backend-build backend-run backend-lint backend-env frontend-env
