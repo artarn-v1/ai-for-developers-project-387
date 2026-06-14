@@ -1,8 +1,21 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Button, Stack, Loader, Alert, Text, Group, Title, Box } from '@mantine/core'
+import { useParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  TextInput,
+  Button,
+  Stack,
+  Loader,
+  Alert,
+  Text,
+  Group,
+  Title,
+  Box,
+  CloseButton,
+} from '@mantine/core'
+import { useForm } from '@mantine/form'
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { getMeetingType, getOccupiedSlots } from '../../api/user.ts'
+import { getMeetingType, getOccupiedSlots, createMeeting } from '../../api/user.ts'
+import type { components } from '../../types/api.ts'
 import { COLORS } from '../../theme.ts'
 import { wallClockInZone, todayInZone, datePartsInZone } from '../../lib/datetime.ts'
 
@@ -23,6 +36,8 @@ interface TimeSlot {
   isOccupied: boolean
   isPast: boolean
 }
+
+type ClientMeetingResponse = components['schemas']['Client.ClientMeetingResponse']
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -49,9 +64,10 @@ function formatTimeRange(time: string, durationMinutes: number): string {
 
 export default function CalendarPage() {
   const { ownerSlug, meetingTypeSlug } = useParams<{ ownerSlug: string; meetingTypeSlug: string }>()
-  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState<SelectedDate | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
+  const [mode, setMode] = useState<'calendar' | 'booking'>('calendar')
 
   const { data: meetingType, isLoading: typeLoading, error: typeError } = useQuery({
     queryKey: ['client-meeting-type', ownerSlug, meetingTypeSlug],
@@ -67,14 +83,12 @@ export default function CalendarPage() {
 
   const ownerTimeZone = meetingType?.owner.timeZone
 
-  // #10: keep "now" ticking so past slots expire without a manual re-select.
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(id)
   }, [])
 
-  // Generate time slots for selected date (interpreted in the owner's time zone).
   const timeSlots = useMemo((): TimeSlot[] => {
     if (!selectedDate || !meetingType || !ownerTimeZone) return []
 
@@ -87,7 +101,6 @@ export default function CalendarPage() {
 
     const { year, month, date } = selectedDate
 
-    // Occupied intervals overlapping the selected owner-zone calendar day.
     const occupiedIntervals = (occupiedMeetings ?? [])
       .filter((m) => {
         const parts = datePartsInZone(m.startDateTime, ownerTimeZone)
@@ -118,13 +131,11 @@ export default function CalendarPage() {
     return slots
   }, [selectedDate, meetingType, ownerTimeZone, occupiedMeetings, now])
 
-  // Calendar state
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return { year: now.getFullYear(), month: now.getMonth() }
   })
 
-  // Generate calendar days (selectable window computed in owner's time zone)
   const calendarDays = useMemo(() => {
     const { year, month } = calendarMonth
     const daysInMonth = getDaysInMonth(year, month)
@@ -171,16 +182,54 @@ export default function CalendarPage() {
   const handleSlotClick = useCallback((slot: TimeSlot) => {
     if (!slot.isOccupied && !slot.isPast) {
       setSelectedSlot(slot)
-      navigate('book', {
-        state: {
-          date: selectedDate,
-          slot: { time: slot.time, dateTime: slot.dateTime.toISOString() },
-        },
-      })
+      setMode('booking')
     }
-  }, [navigate, selectedDate])
+  }, [])
 
-  // Pre-computed text values
+  const handleBack = useCallback(() => {
+    setSelectedSlot(null)
+    setMode('calendar')
+  }, [])
+
+  const form = useForm({
+    mode: 'uncontrolled',
+    initialValues: {
+      comment: '',
+      participants: [{ name: '', email: '' }],
+    },
+    validate: {
+      participants: {
+        name: (val: string) => (val.trim().length > 0 ? null : 'Name is required'),
+        email: (val: string) => (/^\S+@\S+\.\S+$/.test(val) ? null : 'Invalid email'),
+      },
+    },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (values: typeof form.values) =>
+      createMeeting(ownerSlug!, meetingTypeSlug!, {
+        startDateTime: selectedSlot!.dateTime.toISOString(),
+        comment: values.comment.trim() || undefined,
+        participants: values.participants.map((p) => ({
+          name: p.name.trim(),
+          email: p.email.trim(),
+        })),
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData<ClientMeetingResponse[]>(
+        ['client-occupied-slots', ownerSlug, meetingTypeSlug],
+        (old) => [...(old ?? []), data],
+      )
+      queryClient.invalidateQueries({ queryKey: ['client-occupied-slots', ownerSlug, meetingTypeSlug] })
+      setSelectedSlot(null)
+      setMode('calendar')
+    },
+  })
+
+  const handleConfirm = useCallback((values: typeof form.values) => {
+    mutation.mutate(values)
+  }, [mutation])
+
   const selectedDateFormatted = selectedDate
     ? DAYS[new Date(selectedDate.year, selectedDate.month, selectedDate.date).getDay()] + ', ' + MONTHS[selectedDate.month] + ' ' + selectedDate.date + ', ' + selectedDate.year
     : ''
@@ -191,230 +240,347 @@ export default function CalendarPage() {
       : meetingType.availableFrom + ' - ' + meetingType.availableTo)
     : ''
 
+  const inputInputStyle: React.CSSProperties = {
+    backgroundColor: COLORS.inputBg,
+    borderColor: COLORS.inputBorder,
+    color: COLORS.text,
+    borderRadius: 8,
+    height: 42,
+  }
+
+  const inputLabelStyle: React.CSSProperties = {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: 500,
+  }
+
   if (typeLoading || slotsLoading) return <Loader />
   if (typeError || slotsError) return <Alert color="red">Ошибка загрузки данных</Alert>
   if (!meetingType) return <Alert color="red">Тип встречи не найден</Alert>
 
+  const participantFields = form.getValues().participants.map((_, index) => (
+    <Group key={index} align="flex-start" gap={8} wrap="nowrap">
+      <TextInput
+        style={{ flex: 1 }}
+        label={index === 0 ? 'Name *' : undefined}
+        placeholder="John Doe"
+        key={form.key(`participants.${index}.name`)}
+        {...form.getInputProps(`participants.${index}.name`)}
+        styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
+      />
+      <TextInput
+        style={{ flex: 1 }}
+        label={index === 0 ? 'Email *' : undefined}
+        placeholder="john@example.com"
+        key={form.key(`participants.${index}.email`)}
+        {...form.getInputProps(`participants.${index}.email`)}
+        styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
+      />
+      {form.getValues().participants.length > 1 && (
+        <CloseButton
+          mt={index === 0 ? 28 : 4}
+          onClick={() => form.removeListItem('participants', index)}
+          aria-label="Remove participant"
+          style={{ color: COLORS.mutedText, flexShrink: 0 }}
+        />
+      )}
+    </Group>
+  ))
+
   return (
     <Box style={{
       display: 'flex',
-      height: '100vh',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
       background: COLORS.bg,
       color: COLORS.text,
       fontFamily: 'system-ui, sans-serif',
-      overflow: 'hidden',
+      padding: 24,
     }}>
-      {/* Left panel - meeting info */}
       <Box style={{
-        width: 240,
-        padding: '32px 20px',
-        borderRightColor: COLORS.border,
-        borderRightWidth: 1,
-        borderRightStyle: 'solid',
+        width: 1040,
+        height: 490,
+        borderRadius: 16,
+        background: COLORS.cardBg,
+        borderColor: COLORS.border,
+        borderWidth: 1,
+        borderStyle: 'solid',
         display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-        flexShrink: 0,
+        overflow: 'hidden',
       }}>
+        {/* Left panel - meeting info */}
         <Box style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          background: COLORS.avatarBg,
-          color: '#fff',
+          width: 240,
+          flexShrink: 0,
+          padding: '28px 24px',
+          borderRightColor: COLORS.border,
+          borderRightWidth: 1,
+          borderRightStyle: 'solid',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          fontWeight: 600,
+          flexDirection: 'column',
+          gap: 16,
         }}>
-          {meetingType.owner.name.charAt(0).toUpperCase()}
-        </Box>
-
-        <Title order={4} style={{ color: COLORS.text, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
-          {meetingType.name}
-        </Title>
-
-        <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>
-          {meetingType.durationMinutes + 'm'}
-        </Text>
-
-        <Text style={{ color: COLORS.mutedText, fontSize: 12, margin: 0 }}>
-          {ownerTimeZone}
-        </Text>
-
-        {selectedDate && (
-          <Text style={{ color: COLORS.mutedText, fontSize: 13, margin: 0, lineHeight: 1.5 }}>
-            {selectedDateFormatted}
-            {selectedSlot && '\n' + formatTimeRange(selectedSlot.time, meetingType.durationMinutes)}
-          </Text>
-        )}
-      </Box>
-
-      {/* Center panel - calendar + slots */}
-      <Box style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 32px',
-        gap: 24,
-        overflowY: 'auto',
-      }}>
-        <Group style={{ margin: 0, justifyContent: 'space-between' }}>
-          <Text style={{ margin: 0, fontSize: 18, fontWeight: 600, color: COLORS.text }}>
-            {MONTHS[calendarMonth.month] + ' ' + calendarMonth.year}
-          </Text>
-          <Group style={{ margin: 0, gap: 8 }}>
-            <Button
-              variant="subtle"
-              size="xs"
-              color={COLORS.mutedText}
-              onClick={() => {
-                setCalendarMonth((prev) => {
-                  const m = prev.month - 1
-                  return { month: m === -1 ? 11 : m, year: m === -1 ? prev.year - 1 : prev.year }
-                })
-              }}
-              style={{ color: COLORS.mutedText, padding: '2px 8px' }}
-            >
-              {'\u2039'}
-            </Button>
-            <Button
-              variant="subtle"
-              size="xs"
-              color={COLORS.mutedText}
-              onClick={() => {
-                setCalendarMonth((prev) => {
-                  const m = prev.month + 1
-                  return { month: m === 12 ? 0 : m, year: m === 12 ? prev.year + 1 : prev.year }
-                })
-              }}
-              style={{ color: COLORS.mutedText, padding: '2px 8px' }}
-            >
-              {'\u203a'}
-            </Button>
-          </Group>
-        </Group>
-
-        {/* Calendar grid */}
-        <Box>
-          <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
-            {DAYS_SHORT.map((d) => (
-              <Text key={d} style={{
-                textAlign: 'center',
-                fontSize: 12,
-                color: COLORS.mutedText,
-                fontWeight: 500,
-                margin: 0,
-              }}>
-                {d}
-              </Text>
-            ))}
+          <Box style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            background: COLORS.avatarBg,
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            fontWeight: 600,
+          }}>
+            {meetingType.owner.name.charAt(0).toUpperCase()}
           </Box>
-          <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-            {calendarDays.map((day, idx) => {
-              const isSelected = selectedDate?.date === day.date
-                && selectedDate.month === calendarMonth.month
-                && selectedDate.year === calendarMonth.year
-                && day.isCurrentMonth
 
-              const cellBg = isSelected
-                ? '#fff'
-                : day.isSelectable
-                  ? COLORS.slotOccupied
-                  : day.isCurrentMonth
-                    ? COLORS.cardBg
-                    : 'transparent'
+          <Title order={4} style={{ color: COLORS.text, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+            {meetingType.name}
+          </Title>
 
-              const cellColor = isSelected ? COLORS.bg : day.isSelectable ? COLORS.text : COLORS.mutedText
-
-              return (
-                <Box
-                  key={idx}
-                  onClick={() => day.isSelectable && handleDateSelect(day.date)}
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: isSelected ? 700 : 400,
-                    cursor: day.isSelectable ? 'pointer' : 'default',
-                    opacity: day.isCurrentMonth ? 1 : 0.25,
-                    backgroundColor: cellBg,
-                    color: cellColor,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {day.date}
-                </Box>
-              )
-            })}
-          </Box>
-        </Box>
-
-        {/* Time slots */}
-        {selectedDate && (
-          <Box>
-            <Text style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '0 0 12px 0' }}>
-              {headerTime}
-            </Text>
-            <Stack gap={4}>
-              {timeSlots.map((slot) => {
-                const isSelected = selectedSlot?.time === slot.time
-                const isDisabled = slot.isOccupied || slot.isPast
-
-                const slotBg = isSelected ? COLORS.selectedSlot : 'transparent'
-                const slotTextColor = isSelected ? '#fff' : COLORS.text
-
-                return (
-                  <Box
-                    key={slot.time}
-                    onClick={() => handleSlotClick(slot)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      padding: '10px 16px',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderStyle: 'solid',
-                      borderColor: isSelected ? COLORS.selectedSlot : COLORS.border,
-                      cursor: isDisabled ? 'default' : 'pointer',
-                      opacity: isDisabled ? 0.4 : 1,
-                      backgroundColor: slotBg,
-                      color: slotTextColor,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <Box style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: isDisabled ? COLORS.slotOccupied : COLORS.slotAvailable,
-                      flexShrink: 0,
-                    }} />
-                    <Text style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>
-                      {slot.time}
-                    </Text>
-                  </Box>
-                )
-              })}
-              {timeSlots.length === 0 && (
-                <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>Нет доступных слотов</Text>
-              )}
-            </Stack>
-          </Box>
-        )}
-
-        {!selectedDate && (
           <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0 }}>
-            Выберите дату для просмотра доступного времени
+            {meetingType.durationMinutes + 'm'}
           </Text>
-        )}
+
+          <Text style={{ color: COLORS.mutedText, fontSize: 12, margin: 0 }}>
+            {ownerTimeZone}
+          </Text>
+
+          {selectedDate && (
+            <Text style={{ color: COLORS.mutedText, fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+              {selectedDateFormatted}
+              {selectedSlot && '\n' + formatTimeRange(selectedSlot.time, meetingType.durationMinutes)}
+            </Text>
+          )}
+        </Box>
+
+        {/* Right panel */}
+        <Box style={{
+          flex: 1,
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Calendar view */}
+          <Box style={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            padding: '20px 24px',
+            opacity: mode === 'calendar' ? 1 : 0,
+            pointerEvents: mode === 'calendar' ? 'auto' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <Group style={{ margin: 0, justifyContent: 'space-between' }}>
+              <Text style={{ margin: 0, fontSize: 16, fontWeight: 600, color: COLORS.text }}>
+                {MONTHS[calendarMonth.month] + ' ' + calendarMonth.year}
+              </Text>
+              <Group style={{ margin: 0, gap: 8 }}>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  color={COLORS.mutedText}
+                  onClick={() => {
+                    setCalendarMonth((prev) => {
+                      const m = prev.month - 1
+                      return { month: m === -1 ? 11 : m, year: m === -1 ? prev.year - 1 : prev.year }
+                    })
+                  }}
+                  style={{ color: COLORS.mutedText, padding: '2px 8px' }}
+                >
+                  {'\u2039'}
+                </Button>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  color={COLORS.mutedText}
+                  onClick={() => {
+                    setCalendarMonth((prev) => {
+                      const m = prev.month + 1
+                      return { month: m === 12 ? 0 : m, year: m === 12 ? prev.year + 1 : prev.year }
+                    })
+                  }}
+                  style={{ color: COLORS.mutedText, padding: '2px 8px' }}
+                >
+                  {'\u203a'}
+                </Button>
+              </Group>
+            </Group>
+
+            <Box style={{ display: 'flex', gap: 24, flex: 1, marginTop: 12, overflow: 'hidden' }}>
+              {/* Calendar grid */}
+              <Box style={{ flex: 5, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+                  {DAYS_SHORT.map((d) => (
+                    <Text key={d} style={{
+                      textAlign: 'center',
+                      fontSize: 11,
+                      color: COLORS.mutedText,
+                      fontWeight: 500,
+                      margin: 0,
+                    }}>
+                      {d}
+                    </Text>
+                  ))}
+                </Box>
+                <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+                  {calendarDays.map((day, idx) => {
+                    const isSelected = selectedDate?.date === day.date
+                      && selectedDate.month === calendarMonth.month
+                      && selectedDate.year === calendarMonth.year
+                      && day.isCurrentMonth
+
+                    const cellBg = isSelected
+                      ? '#fff'
+                      : day.isSelectable
+                        ? COLORS.slotOccupied
+                        : day.isCurrentMonth
+                          ? COLORS.cardBg
+                          : 'transparent'
+
+                    const cellColor = isSelected ? COLORS.bg : day.isSelectable ? COLORS.text : COLORS.mutedText
+
+                    return (
+                      <Box
+                        key={idx}
+                        onClick={() => day.isSelectable && handleDateSelect(day.date)}
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: isSelected ? 700 : 400,
+                          cursor: day.isSelectable ? 'pointer' : 'default',
+                          opacity: day.isCurrentMonth ? 1 : 0.25,
+                          backgroundColor: cellBg,
+                          color: cellColor,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {day.date}
+                      </Box>
+                    )
+                  })}
+                </Box>
+              </Box>
+
+              {/* Time slots */}
+              {selectedDate && (
+                <Box style={{ flex: 3, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <Text style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: '0 0 8px 0' }}>
+                    {headerTime}
+                  </Text>
+                  <Box className="hide-scrollbar" style={{ overflowY: 'auto', flex: 1 }}>
+                    <Stack gap={4}>
+                      {timeSlots.map((slot) => {
+                        const isSelected = selectedSlot?.time === slot.time
+                        const isDisabled = slot.isOccupied || slot.isPast
+
+                        const slotBg = isSelected ? COLORS.selectedSlot : 'transparent'
+                        const slotTextColor = isSelected ? '#fff' : COLORS.text
+
+                        return (
+                          <Box
+                            key={slot.time}
+                            onClick={() => handleSlotClick(slot)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              padding: '8px 14px',
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderStyle: 'solid',
+                              borderColor: isSelected ? COLORS.selectedSlot : COLORS.border,
+                              cursor: isDisabled ? 'default' : 'pointer',
+                              opacity: isDisabled ? 0.4 : 1,
+                              backgroundColor: slotBg,
+                              color: slotTextColor,
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <Box style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: isDisabled ? COLORS.slotOccupied : COLORS.slotAvailable,
+                              flexShrink: 0,
+                            }} />
+                            <Text style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+                              {slot.time}
+                            </Text>
+                          </Box>
+                        )
+                      })}
+                      {timeSlots.length === 0 && (
+                        <Text style={{ color: COLORS.mutedText, fontSize: 13, margin: 0 }}>Нет доступных слотов</Text>
+                      )}
+                    </Stack>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+
+            {!selectedDate && (
+              <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0, marginTop: 16 }}>
+                Выберите дату для просмотра доступного времени
+              </Text>
+            )}
+          </Box>
+
+          {/* Booking form view */}
+          <Box style={{
+            position: 'absolute',
+            inset: 0,
+            overflowY: 'auto',
+            padding: '24px 28px',
+            opacity: mode === 'booking' ? 1 : 0,
+            pointerEvents: mode === 'booking' ? 'auto' : 'none',
+          }}>
+            <Box component="form" onSubmit={form.onSubmit(handleConfirm)}>
+              <Stack gap={14}>
+                {participantFields}
+
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  onClick={() => form.insertListItem('participants', { name: '', email: '' })}
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  + Add participant
+                </Button>
+
+                <TextInput
+                  label="Additional notes"
+                  placeholder="Optional note"
+                  key={form.key('comment')}
+                  {...form.getInputProps('comment')}
+                  styles={{ input: { ...inputInputStyle }, label: { ...inputLabelStyle } }}
+                />
+
+                <Group style={{ justifyContent: 'flex-end', gap: 12 }}>
+                  <Button variant="subtle" color={COLORS.mutedText} onClick={handleBack}>
+                    Back
+                  </Button>
+                  <Button type="submit" loading={mutation.isPending}>
+                    Confirm
+                  </Button>
+                </Group>
+
+                {mutation.isError && (
+                  <Alert color="red">
+                    {mutation.error instanceof Error ? mutation.error.message : 'Booking failed. Please try again.'}
+                  </Alert>
+                )}
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
       </Box>
     </Box>
   )

@@ -5,7 +5,6 @@ import MeetingTypesPage from './routes/admin/MeetingTypesPage'
 import MeetingsPage from './routes/admin/MeetingsPage'
 import ClientMeetingTypesPage from './routes/client/MeetingTypesPage'
 import CalendarPage from './routes/client/CalendarPage'
-import BookingPage from './routes/client/BookingPage'
 import NotFound from './routes/NotFound'
 
 function App() {
@@ -20,7 +19,6 @@ function App() {
       <Route path="/client/:ownerSlug" element={<ClientLayout />}>
         <Route index element={<ClientMeetingTypesPage />} />
         <Route path=":meetingTypeSlug" element={<CalendarPage />} />
-        <Route path=":meetingTypeSlug/book" element={<BookingPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
