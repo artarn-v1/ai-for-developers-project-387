@@ -9,20 +9,27 @@ model MeetingTypeResponse {
   @format("uuid")
   id: string;
 
+  @example("Личное напоминание про масло")
   name: string;
 
+  @example("Напоминание о смене масла в автомобиле")
   description: string;
 
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+  @example("09:00")
   availableFrom: string;
 
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+  @example("18:00")
   availableTo: string;
 
+  @example(10)
   durationMinutes: int32;
 
+  @example("personal-oil-change")
   slug: string;
 
+  @example(true)
   isActive: boolean;
 }
 
