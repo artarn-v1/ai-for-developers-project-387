@@ -9,7 +9,12 @@ import {
   Badge,
   Group,
   Button,
+  SegmentedControl,
+  Flex,
+  Text,
 } from '@mantine/core'
+import { DateInput } from '@mantine/dates'
+import dayjs from 'dayjs'
 import { getMeetings, updateMeetingStatus } from '../../api/admin.ts'
 import { CodeBlock } from '../../components/CodeBlock.tsx'
 import { COLORS } from '../../theme.ts'
@@ -31,9 +36,20 @@ export default function MeetingsPage() {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<MeetingResponse | null>(null)
 
+  const [dateStartFrom, setDateStartFrom] = useState<string | null>(dayjs().format('MMMM D, YYYY'))
+  const [dateStartTo, setDateStartTo] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const activeFilters = {
+    ...(dateStartFrom && { dateStartFrom: new Date(dateStartFrom).toISOString() }),
+    ...(dateStartTo && { dateStartTo: new Date(dateStartTo).toISOString() }),
+    ...(statusFilter === 'confirmed' && { isConfirmed: true }),
+    ...(statusFilter === 'pending' && { isConfirmed: false }),
+  }
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['meetings', adminSlug],
-    queryFn: () => getMeetings(adminSlug!),
+    queryKey: ['meetings', adminSlug, activeFilters],
+    queryFn: () => getMeetings(adminSlug!, activeFilters),
     enabled: !!adminSlug,
   })
 
@@ -55,7 +71,63 @@ export default function MeetingsPage() {
       <Title order={4} mb="md" style={{ color: COLORS.text }}>
         Meetings
       </Title>
-      <Table withRowBorder style={{ background: COLORS.cardBg, borderRadius: 8 }}>
+
+      <Flex gap="md" mb="md" align="end" wrap="wrap" style={{ background: COLORS.cardBg, padding: 12, borderRadius: 8 }}>
+        <DateInput
+          value={dateStartFrom}
+          onChange={setDateStartFrom}
+          clearable
+          label="Date from"
+          placeholder="From"
+          popoverProps={{ styles: { dropdown: { background: COLORS.cardBg, borderColor: COLORS.border } } }}
+          styles={{
+            label: { color: COLORS.text },
+            input: { background: COLORS.inputBg, borderColor: COLORS.inputBorder, color: COLORS.text },
+            levelsGroup: { background: COLORS.cardBg },
+            month: { background: COLORS.cardBg },
+            monthCell: { color: COLORS.text },
+            day: { color: COLORS.text },
+            weekday: { color: COLORS.mutedText },
+            calendarHeader: { color: COLORS.text },
+            calendarHeaderLevel: { color: COLORS.text },
+            calendarHeaderControl: { color: COLORS.text },
+          }}
+        />
+        <DateInput
+          value={dateStartTo}
+          onChange={setDateStartTo}
+          clearable
+          label="Date to"
+          placeholder="To"
+          popoverProps={{ styles: { dropdown: { background: COLORS.cardBg, borderColor: COLORS.border } } }}
+          styles={{
+            label: { color: COLORS.text },
+            input: { background: COLORS.inputBg, borderColor: COLORS.inputBorder, color: COLORS.text },
+            levelsGroup: { background: COLORS.cardBg },
+            month: { background: COLORS.cardBg },
+            monthCell: { color: COLORS.text },
+            day: { color: COLORS.text },
+            weekday: { color: COLORS.mutedText },
+            calendarHeader: { color: COLORS.text },
+            calendarHeaderLevel: { color: COLORS.text },
+            calendarHeaderControl: { color: COLORS.text },
+          }}
+        />
+        <div>
+          <Text size="sm" mb={4} style={{ color: COLORS.text }}>Status</Text>
+          <SegmentedControl
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v)}
+            data={[
+              { value: 'all', label: 'All' },
+              { value: 'confirmed', label: 'Confirmed' },
+              { value: 'pending', label: 'Pending' },
+            ]}
+          />
+        </div>
+      </Flex>
+
+      <Table withRowBorders style={{ background: COLORS.cardBg, borderRadius: 8 }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th style={headerStyle}>Date</Table.Th>

@@ -83,7 +83,7 @@ export default function MeetingTypesPage() {
         <Button onClick={open}>Создать</Button>
       </Group>
 
-      <Table withRowBorder style={{ background: COLORS.cardBg, borderRadius: 8 }}>
+      <Table withRowBorders style={{ background: COLORS.cardBg, borderRadius: 8 }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th style={headerStyle}>Name</Table.Th>

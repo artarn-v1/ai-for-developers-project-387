@@ -22,8 +22,20 @@ export function createMeetingType(
   )
 }
 
-export function getMeetings(adminSlug: string) {
-  return api.get<MeetingResponse[]>(`/admin/${adminSlug}/meetings`)
+export function getMeetings(
+  adminSlug: string,
+  filters?: {
+    dateStartFrom?: string
+    dateStartTo?: string
+    isConfirmed?: boolean
+  },
+) {
+  const params = new URLSearchParams()
+  if (filters?.dateStartFrom) params.set('dateStartFrom', filters.dateStartFrom)
+  if (filters?.dateStartTo) params.set('dateStartTo', filters.dateStartTo)
+  if (filters?.isConfirmed !== undefined) params.set('isConfirmed', String(filters.isConfirmed))
+  const qs = params.toString()
+  return api.get<MeetingResponse[]>(`/admin/${adminSlug}/meetings${qs ? `?${qs}` : ''}`)
 }
 
 export function updateMeetingStatus(
