@@ -5,9 +5,12 @@ model Owner {
   @format("uuid")
   id: string;
 
+  @example("Evgeny")
   name: string;
 
+  @example("evgeny-admin")
   adminSlug: string;
 
+  @example("evgeny")
   clientSlug: string;
 }

@@ -6,16 +6,20 @@ namespace MeetingBooking.Client;
 using MeetingBooking;
 
 model ClientOwnerResponse {
+  @example("Evgeny")
   name: string;
 
+  @example("evgeny")
   clientSlug: string;
 }
 
 model ClientMeetingTypeResponse {
   owner: ClientOwnerResponse;
 
+  @example("Личное напоминание про масло")
   name: string;
 
+  @example("Напоминание о смене масла")
   description: string;
 
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
@@ -24,8 +28,10 @@ model ClientMeetingTypeResponse {
   @pattern("^([01][0-9]|2[0-3]):[0-5][0-9]$")
   availableTo: string;
 
+  @example(10)
   durationMinutes: int32;
 
+  @example("personal-oil-change")
   slug: string;
 }
 
