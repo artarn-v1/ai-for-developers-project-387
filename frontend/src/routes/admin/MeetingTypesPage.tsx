@@ -80,7 +80,16 @@ export default function MeetingTypesPage() {
         <Title order={4} style={{ color: COLORS.text }}>
           Meeting Types
         </Title>
-        <Button onClick={open}>Создать</Button>
+        <Group gap="xs">
+          <CopyButton value={`${window.location.origin}/client/${adminSlug}`}>
+            {({ copied, copy }) => (
+              <Button size="xs" color={copied ? 'green' : 'blue'} onClick={copy}>
+                {copied ? 'Copied' : 'Copy client link'}
+              </Button>
+            )}
+          </CopyButton>
+          <Button onClick={open}>Создать</Button>
+        </Group>
       </Group>
 
       <Table withRowBorders style={{ background: COLORS.cardBg, borderRadius: 8 }}>
