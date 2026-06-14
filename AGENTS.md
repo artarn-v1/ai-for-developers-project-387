@@ -26,6 +26,7 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 |-------------|-----------|
 | `make frontend-dev` | `cd frontend && npm run dev` |
 | `make frontend-build` | `cd frontend && npm run build` (сначала `tsc -b`) |
+| `make frontend-preview` | `cd frontend && npm run preview` (Vite preview продакшн-сборки) |
 | `make mock` | `cd frontend && npx prism mock ../tsp-output/schema/openapi.yaml -p 8080` |
 
 Только фронтенд: `cd frontend && npm run lint` (ESLint).
@@ -38,9 +39,16 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 ## Соглашения по коду
 
 - TypeScript strict mode: `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax` (используй `import type` для импортов только типов)
+- `erasableSyntaxOnly: true` — запрещены `enum`, `namespace` (кроме `declare`), parameter properties
 - PostCSS с пресетом Mantine (`postcss-preset-mantine`)
 - ESLint с `typescript-eslint` strict + плагин `react-refresh`
 - Сгенерированный файл типов `frontend/src/types/api.ts` закоммичен; перегенерируй после изменений API
+
+## Особенности проекта
+
+- **В проекте нет тестов** — ни одной тестовой зависимости или скрипта. При добавлении функционала тесты нужно писать с нуля.
+- **Prism mock-сервер не сохраняет состояние** между запросами. Любые созданные данные живут только в рамках одного запроса.
+- **TypeScript использует project references** (`tsconfig.json` → `tsconfig.app.json` + `tsconfig.node.json`). `tsc -b` собирает оба.
 
 ## Архитектура
 
