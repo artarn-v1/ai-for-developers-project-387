@@ -83,7 +83,7 @@ export default function MeetingTypesPage() {
           }}
           onMouseEnter={() => setHoveredIdx(idx)}
           onMouseLeave={() => setHoveredIdx(null)}
-          onClick={() => navigate(`/client/${ownerSlug}/${mt.slug}/book`)}
+          onClick={() => navigate(`/client/${ownerSlug}/${mt.slug}`)}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
