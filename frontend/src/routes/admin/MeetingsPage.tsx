@@ -9,7 +9,6 @@ import {
   Badge,
   Group,
   Button,
-  SegmentedControl,
   Select,
   Flex,
   Text,
@@ -49,7 +48,7 @@ export default function MeetingsPage() {
     ...(dateStartFrom && { dateStartFrom: new Date(dateStartFrom).toISOString() }),
     ...(dateStartTo && { dateStartTo: new Date(dateStartTo).toISOString() }),
     ...(statusFilter === 'confirmed' && { isConfirmed: true }),
-    ...(statusFilter === 'pending' && { isConfirmed: false }),
+    ...(statusFilter === 'declined' && { isConfirmed: false }),
     ...(meetingTypeId && { meetingTypeId }),
   }
 
@@ -127,18 +126,23 @@ export default function MeetingsPage() {
             calendarHeaderControl: { color: COLORS.text },
           }}
         />
-        <div>
-          <Text size="sm" mb={4} style={{ color: COLORS.text }}>Status</Text>
-          <SegmentedControl
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v)}
-            data={[
-              { value: 'all', label: 'All' },
-              { value: 'confirmed', label: 'Confirmed' },
-              { value: 'pending', label: 'Pending' },
-            ]}
-          />
-        </div>
+        <Select
+          label="Status"
+          placeholder="All"
+          clearable
+          value={statusFilter === 'all' ? null : statusFilter}
+          onChange={(v) => setStatusFilter(v ?? 'all')}
+          data={[
+            { value: 'confirmed', label: 'Confirmed' },
+            { value: 'declined', label: 'Declined' },
+          ]}
+          styles={{
+            label: { color: COLORS.text },
+            input: { background: COLORS.inputBg, borderColor: COLORS.inputBorder, color: COLORS.text },
+            dropdown: { background: COLORS.cardBg, borderColor: COLORS.border },
+            option: { color: COLORS.text },
+          }}
+        />
         <Select
           label="Meeting type"
           placeholder="All types"
@@ -173,7 +177,7 @@ export default function MeetingsPage() {
               <Table.Td style={cellStyle}>{m.initiator.name}</Table.Td>
               <Table.Td style={cellStyle}>
                 <Badge color={m.isConfirmed ? 'green' : 'yellow'}>
-                  {m.isConfirmed ? 'Confirmed' : 'Pending'}
+                  {m.isConfirmed ? 'Confirmed' : 'Declined'}
                 </Badge>
               </Table.Td>
               <Table.Td style={cellStyle}>
@@ -234,7 +238,7 @@ export default function MeetingsPage() {
               <Box>
                 <Text size="sm" c={COLORS.mutedText}>Status</Text>
                 <Badge color={selected.isConfirmed ? 'green' : 'yellow'}>
-                  {selected.isConfirmed ? 'Confirmed' : 'Pending'}
+                  {selected.isConfirmed ? 'Confirmed' : 'Declined'}
                 </Badge>
               </Box>
             </Group>
