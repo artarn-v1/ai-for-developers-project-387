@@ -7,3 +7,7 @@ dist/
 
 # Dependency directories
 node_modules/
+
+# Go binaries
+backend/server
+backend/server.exe

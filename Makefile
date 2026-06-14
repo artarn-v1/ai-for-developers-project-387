@@ -34,6 +34,20 @@ mock:
 dev-full:
 	cd frontend && npm run dev:full
 
+# ---- Backend ----
+
+backend-install:
+	cd backend && go mod tidy
+
+backend-build:
+	cd backend && go build ./cmd/server
+
+backend-run:
+	cd backend && go run ./cmd/server
+
+backend-lint:
+	cd backend && go vet ./...
+
 # ---- API (TypeSpec) ----
 
 api-compile:
@@ -42,3 +56,4 @@ api-compile:
 .PHONY: install install-all frontend-install api-install
 .PHONY: frontend-dev frontend-build frontend-generate-types frontend-preview
 .PHONY: mock dev-full api-compile
+.PHONY: backend-install backend-build backend-run backend-lint

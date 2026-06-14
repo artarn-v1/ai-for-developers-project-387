@@ -13,4 +13,7 @@ model Owner {
 
   @example("evgeny")
   clientSlug: string;
+
+  @example("Europe/Moscow")
+  timeZone: string;
 }

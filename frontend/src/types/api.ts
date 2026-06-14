@@ -258,6 +258,8 @@ export interface components {
             adminSlug: string;
             /** @example evgeny */
             clientSlug: string;
+            /** @example Europe/Moscow */
+            timeZone: string;
         };
         Participant: {
             /** Format: uuid */
