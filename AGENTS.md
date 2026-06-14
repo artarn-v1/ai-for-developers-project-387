@@ -40,7 +40,7 @@ make dev-full             # Prism mock (порт 8080) + Vite одновреме
 
 - `VITE_API_URL` — базовый URL API (по умолчанию `http://localhost:8080`)
 - Vite резолвит импорты `@/` в `frontend/src/`
-- Бэкенд: `PORT` (по умолчанию `8080`), `DATABASE_URL` (по умолчанию `postgres://localhost:5432/meeting_booking?sslmode=disable`)
+- Бэкенд: `PORT` (по умолчанию `8080`), `DATABASE_URL` (по умолчанию `postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable`)
 
 ## Соглашения по коду
 

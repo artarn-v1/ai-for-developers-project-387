@@ -46,7 +46,7 @@ migrations/                 — golang-migrate
 | Переменная | По умолчанию | Описание |
 |-----------|-------------|----------|
 | `PORT` | `8080` | Порт сервера |
-| `DATABASE_URL` | `postgres://localhost:5432/meeting_booking?sslmode=disable` | Подключение к БД |
+| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable` | Подключение к БД |
 
 ## Разработка
 

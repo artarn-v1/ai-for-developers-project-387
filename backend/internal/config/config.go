@@ -16,7 +16,7 @@ func Load() Config {
 
 	return Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://localhost:5432/meeting_booking?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable"),
 	}
 }
 

@@ -48,6 +48,12 @@ backend-run:
 backend-lint:
 	cd backend && go vet ./...
 
+backend-migrate:
+	cd backend && migrate -path migrations -database "$(DATABASE_URL)" up
+
+backend-migrate-create:
+	cd backend && migrate create -ext sql -dir migrations -seq $(name)
+
 backend-env:
 	cp -n backend/.env.example backend/.env
 
@@ -62,4 +68,4 @@ api-compile:
 .PHONY: install install-all frontend-install api-install
 .PHONY: frontend-dev frontend-build frontend-generate-types frontend-preview
 .PHONY: mock dev-full api-compile
-.PHONY: backend-install backend-build backend-run backend-lint backend-env frontend-env
+.PHONY: backend-install backend-build backend-run backend-lint backend-migrate backend-migrate-create backend-env frontend-env
