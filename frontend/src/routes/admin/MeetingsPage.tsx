@@ -66,13 +66,21 @@ export default function MeetingsPage() {
 
   const meetingTypeOptions = meetingTypes?.map((mt) => ({ value: mt.id, label: mt.name })) ?? []
 
-  const mutation = useMutation({
+  const confirmMutation = useMutation({
     mutationFn: (meetingId: string) =>
-      updateMeetingStatus(adminSlug!, meetingId, {
-        isConfirmed: true,
-      }),
+      updateMeetingStatus(adminSlug!, meetingId, { isConfirmed: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings', adminSlug] })
+      setSelected((prev) => (prev ? { ...prev, isConfirmed: true } : null))
+    },
+  })
+
+  const declineMutation = useMutation({
+    mutationFn: (meetingId: string) =>
+      updateMeetingStatus(adminSlug!, meetingId, { isConfirmed: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings', adminSlug] })
+      setSelected((prev) => (prev ? { ...prev, isConfirmed: false } : null))
     },
   })
 
@@ -192,8 +200,8 @@ export default function MeetingsPage() {
                   {!m.isConfirmed && (
                     <Button
                       size="xs"
-                      loading={mutation.isPending}
-                      onClick={() => mutation.mutate(m.id)}
+                      loading={confirmMutation.isPending}
+                      onClick={() => confirmMutation.mutate(m.id)}
                     >
                       Confirm
                     </Button>
@@ -275,6 +283,28 @@ export default function MeetingsPage() {
                 </Box>
               </>
             )}
+
+            <Divider color={COLORS.border} />
+
+            <Group justify="center" gap="md">
+              {!selected.isConfirmed && (
+                <Button
+                  loading={confirmMutation.isPending}
+                  onClick={() => confirmMutation.mutate(selected.id)}
+                >
+                  Confirm
+                </Button>
+              )}
+              {selected.isConfirmed && (
+                <Button
+                  color="red"
+                  loading={declineMutation.isPending}
+                  onClick={() => declineMutation.mutate(selected.id)}
+                >
+                  Decline
+                </Button>
+              )}
+            </Group>
           </Stack>
         )}
       </Modal>
