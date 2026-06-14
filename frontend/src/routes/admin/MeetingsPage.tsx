@@ -10,13 +10,17 @@ import {
   Group,
   Button,
   SegmentedControl,
+  Select,
   Flex,
   Text,
+  Modal,
+  Box,
+  Stack,
+  Divider,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import dayjs from 'dayjs'
-import { getMeetings, updateMeetingStatus } from '../../api/admin.ts'
-import { CodeBlock } from '../../components/CodeBlock.tsx'
+import { getMeetings, getMeetingTypes, updateMeetingStatus } from '../../api/admin.ts'
 import { COLORS } from '../../theme.ts'
 import type { components } from '../../types/api.ts'
 type MeetingResponse = components['schemas']['Admin.MeetingResponse']
@@ -39,19 +43,29 @@ export default function MeetingsPage() {
   const [dateStartFrom, setDateStartFrom] = useState<string | null>(dayjs().format('MMMM D, YYYY'))
   const [dateStartTo, setDateStartTo] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [meetingTypeId, setMeetingTypeId] = useState<string | null>(null)
 
   const activeFilters = {
     ...(dateStartFrom && { dateStartFrom: new Date(dateStartFrom).toISOString() }),
     ...(dateStartTo && { dateStartTo: new Date(dateStartTo).toISOString() }),
     ...(statusFilter === 'confirmed' && { isConfirmed: true }),
     ...(statusFilter === 'pending' && { isConfirmed: false }),
+    ...(meetingTypeId && { meetingTypeId }),
   }
 
-  const { data, isLoading, error } = useQuery({
+  const { data: meetings, isLoading, error } = useQuery({
     queryKey: ['meetings', adminSlug, activeFilters],
     queryFn: () => getMeetings(adminSlug!, activeFilters),
     enabled: !!adminSlug,
   })
+
+  const { data: meetingTypes } = useQuery({
+    queryKey: ['meeting-types', adminSlug],
+    queryFn: () => getMeetingTypes(adminSlug!),
+    enabled: !!adminSlug,
+  })
+
+  const meetingTypeOptions = meetingTypes?.map((mt) => ({ value: mt.id, label: mt.name })) ?? []
 
   const mutation = useMutation({
     mutationFn: (meetingId: string) =>
@@ -125,6 +139,20 @@ export default function MeetingsPage() {
             ]}
           />
         </div>
+        <Select
+          label="Meeting type"
+          placeholder="All types"
+          clearable
+          value={meetingTypeId}
+          onChange={(v) => setMeetingTypeId(v as string | null)}
+          data={meetingTypeOptions}
+          styles={{
+            label: { color: COLORS.text },
+            input: { background: COLORS.inputBg, borderColor: COLORS.inputBorder, color: COLORS.text },
+            dropdown: { background: COLORS.cardBg, borderColor: COLORS.border },
+            option: { color: COLORS.text },
+          }}
+        />
       </Flex>
 
       <Table withRowBorders style={{ background: COLORS.cardBg, borderRadius: 8 }}>
@@ -138,7 +166,7 @@ export default function MeetingsPage() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {data?.map((m) => (
+          {meetings?.map((m) => (
             <Table.Tr key={m.id}>
               <Table.Td style={cellStyle}>{new Date(m.startDateTime).toLocaleString()}</Table.Td>
               <Table.Td style={cellStyle}>{m.meetingType.name}</Table.Td>
@@ -173,22 +201,79 @@ export default function MeetingsPage() {
         </Table.Tbody>
       </Table>
 
-      {selected && (
-        <Alert
-          title="Meeting Details (JSON)"
-          withCloseButton
-          onClose={() => setSelected(null)}
-          mt="md"
-          styles={{
-            root: { background: COLORS.cardBg, borderColor: COLORS.border },
-            title: { color: COLORS.text },
-            message: { color: COLORS.text },
-            closeButton: { color: COLORS.mutedText },
-          }}
-        >
-          <CodeBlock code={selected} />
-        </Alert>
-      )}
+      <Modal
+        opened={!!selected}
+        onClose={() => setSelected(null)}
+        title="Meeting Details"
+        centered
+        size="lg"
+        styles={{
+          content: { background: COLORS.cardBg, border: `1px solid ${COLORS.border}` },
+          header: { background: COLORS.cardBg },
+          title: { color: COLORS.text, fontWeight: 600 },
+          body: { background: COLORS.cardBg },
+          close: { color: COLORS.text },
+        }}
+        overlayProps={{ style: { background: 'rgba(0,0,0,0.6)' } }}
+      >
+        {selected && (
+          <Stack gap="md">
+            <Box>
+              <Text size="sm" c={COLORS.mutedText}>Meeting Type</Text>
+              <Text c={COLORS.text} fw={500}>{selected.meetingType.name}</Text>
+              <Text size="sm" c={COLORS.mutedText}>{selected.meetingType.description}</Text>
+            </Box>
+
+            <Divider color={COLORS.border} />
+
+            <Group grow>
+              <Box>
+                <Text size="sm" c={COLORS.mutedText}>Date & Time</Text>
+                <Text c={COLORS.text}>{new Date(selected.startDateTime).toLocaleString()}</Text>
+              </Box>
+              <Box>
+                <Text size="sm" c={COLORS.mutedText}>Status</Text>
+                <Badge color={selected.isConfirmed ? 'green' : 'yellow'}>
+                  {selected.isConfirmed ? 'Confirmed' : 'Pending'}
+                </Badge>
+              </Box>
+            </Group>
+
+            <Divider color={COLORS.border} />
+
+            <Box>
+              <Text size="sm" c={COLORS.mutedText}>Initiator</Text>
+              <Text c={COLORS.text}>{selected.initiator.name}</Text>
+              <Text size="sm" c={COLORS.mutedText}>{selected.initiator.email}</Text>
+            </Box>
+
+            {selected.participants.length > 0 && (
+              <>
+                <Divider color={COLORS.border} />
+                <Box>
+                  <Text size="sm" c={COLORS.mutedText}>Participants</Text>
+                  {selected.participants.map((p) => (
+                    <Box key={p.id} mb={4}>
+                      <Text c={COLORS.text}>{p.name}</Text>
+                      <Text size="sm" c={COLORS.mutedText}>{p.email}</Text>
+                    </Box>
+                  ))}
+                </Box>
+              </>
+            )}
+
+            {selected.comment && (
+              <>
+                <Divider color={COLORS.border} />
+                <Box>
+                  <Text size="sm" c={COLORS.mutedText}>Comment</Text>
+                  <Text c={COLORS.text}>{selected.comment}</Text>
+                </Box>
+              </>
+            )}
+          </Stack>
+        )}
+      </Modal>
     </>
   )
 }

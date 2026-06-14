@@ -102,6 +102,7 @@ interface AdminMeetings {
     @query dateStartFrom?: utcDateTime,
     @query dateStartTo?: utcDateTime,
     @query isConfirmed?: boolean,
+    @query meetingTypeId?: string,
   ): MeetingResponse[];
 }
 

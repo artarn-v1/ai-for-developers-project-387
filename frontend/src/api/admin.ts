@@ -28,12 +28,14 @@ export function getMeetings(
     dateStartFrom?: string
     dateStartTo?: string
     isConfirmed?: boolean
+    meetingTypeId?: string
   },
 ) {
   const params = new URLSearchParams()
   if (filters?.dateStartFrom) params.set('dateStartFrom', filters.dateStartFrom)
   if (filters?.dateStartTo) params.set('dateStartTo', filters.dateStartTo)
   if (filters?.isConfirmed !== undefined) params.set('isConfirmed', String(filters.isConfirmed))
+  if (filters?.meetingTypeId) params.set('meetingTypeId', filters.meetingTypeId)
   const qs = params.toString()
   return api.get<MeetingResponse[]>(`/admin/${adminSlug}/meetings${qs ? `?${qs}` : ''}`)
 }

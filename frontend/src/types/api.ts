@@ -356,6 +356,7 @@ export interface operations {
                 dateStartFrom?: string;
                 dateStartTo?: string;
                 isConfirmed?: boolean;
+                meetingTypeId?: string;
             };
             header?: never;
             path: {
