@@ -35,8 +35,6 @@ export default function MeetingTypesPage() {
   }
 
   const cardStyle: React.CSSProperties = {
-    maxWidth: 768,
-    margin: '0 auto',
     background: COLORS.cardBg,
     borderRadius: 16,
     border: `1px solid ${COLORS.border}`,
@@ -47,29 +45,31 @@ export default function MeetingTypesPage() {
   if (error) return <Alert color="red">Не удалось загрузить типы встреч</Alert>
   if (!data || data.length === 0) {
     return (
-      <div style={cardStyle}>
-        <div style={{ padding: 24, color: COLORS.mutedText, textAlign: 'center' }}>
-          У этого пользователя пока нет доступных встреч
+      <div style={{ maxWidth: 768, margin: '0 auto' }}>
+        <div style={cardStyle}>
+          <div style={{ padding: 24, color: COLORS.mutedText, textAlign: 'center' }}>
+            У этого пользователя пока нет доступных встреч
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={cardStyle}>
-      {/* Profile section - avatar on top, name below */}
-      <div style={{ padding: '24px 24px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={avatarStyle}>{ownerInitial}</div>
-        <div style={{ color: COLORS.text, fontSize: 20, fontWeight: 700 }}>
-          {ownerName}
+    <div style={{ maxWidth: 768, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Profile card */}
+      <div style={{ ...cardStyle, marginTop: 10 }}>
+        <div style={{ padding: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={avatarStyle}>{ownerInitial}</div>
+          <div style={{ color: COLORS.text, fontSize: 20, fontWeight: 700 }}>
+            {ownerName}
+          </div>
         </div>
       </div>
 
-      {/* Divider */}
-      <div style={{ borderTop: `1px solid ${COLORS.border}` }} />
-
-      {/* Meeting types list */}
-      {data?.map((mt, idx) => (
+      {/* Meeting types card */}
+      <div style={cardStyle}>
+        {data?.map((mt, idx) => (
         <div
           key={mt.slug}
           style={{
@@ -106,7 +106,8 @@ export default function MeetingTypesPage() {
             </div>
           </div>
         </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
