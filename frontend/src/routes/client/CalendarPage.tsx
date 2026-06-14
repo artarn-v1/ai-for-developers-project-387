@@ -40,7 +40,7 @@ interface TimeSlot {
 type ClientMeetingResponse = components['schemas']['Client.ClientMeetingResponse']
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -51,7 +51,7 @@ function getDaysInMonth(year: number, month: number): number {
 }
 
 function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay()
+  return (new Date(year, month, 1).getDay() + 6) % 7
 }
 
 function formatTimeRange(time: string, durationMinutes: number): string {
@@ -469,8 +469,8 @@ export default function CalendarPage() {
                 </Box>
               </Box>
 
-              {/* Time slots */}
-              {selectedDate && (
+              {/* Time slots / empty state */}
+              {selectedDate ? (
                 <Box style={{ flex: 3, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                   <Text style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: '0 0 8px 0' }}>
                     {headerTime}
@@ -523,14 +523,14 @@ export default function CalendarPage() {
                     </Stack>
                   </Box>
                 </Box>
+              ) : (
+                <Box style={{ flex: 3, minWidth: 0 }}>
+                  <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0, marginTop: 16 }}>
+                    Выберите дату
+                  </Text>
+                </Box>
               )}
             </Box>
-
-            {!selectedDate && (
-              <Text style={{ color: COLORS.mutedText, fontSize: 14, margin: 0, marginTop: 16 }}>
-                Выберите дату для просмотра доступного времени
-              </Text>
-            )}
           </Box>
 
           {/* Booking form view */}
