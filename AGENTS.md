@@ -4,64 +4,119 @@
 
 Meeting Booking Service — монорепозиторий из трёх пакетов:
 
-| Директория | Технологии | Входная точка / назначение |
+| Директория | Технологии | Входная точка |
 |-----------|------|----------------------|
-| корень | TypeSpec 1.12 | `main.tsp` — спецификация API → OpenAPI 3.1.0 YAML |
-| `backend/` | Go 1.26 + chi v5 + sqlx + PostgreSQL | `backend/cmd/server/main.go` |
-| `frontend/` | React 19 + Vite + Mantine 9 + TanStack Query 5 + React Router v7 | `frontend/src/main.tsx` |
+| корень | TypeSpec 1.12 | `main.tsp` → OpenAPI 3.1.0 YAML |
+| `backend/` | Go 1.26 + chi v5 + sqlx + PostgreSQL | `cmd/server/main.go` |
+| `frontend/` | React 19 + Vite + Mantine 9 + TanStack Query 5 + React Router v7 | `src/main.tsx` |
 
 ## Рабочий процесс
 
 ```bash
-make install              # npm ci в корне + frontend/
-make api-compile          # tsp compile . → tsp-output/schema/openapi.yaml
-make frontend-generate-types  # openapi-typescript → frontend/src/types/api.ts
-make dev-full             # Prism mock (порт 8080) + Vite одновременно
+make install                 # npm ci в корне + frontend/
+make api-compile             # tsp compile . → tsp-output/schema/openapi.yaml
+make frontend-generate-types # openapi-typescript → frontend/src/types/api.ts
 ```
 
-**Обязательный порядок** после изменения `.tsp` файлов: `api-compile` → `frontend-generate-types`.
+**Обязательный порядок** после изменения `.tsp`: `api-compile` → `frontend-generate-types`.
+
+```bash
+make dev-full                # Prism mock (порт 8080) + Vite одновременно
+```
 
 ## Команды
 
+### TypeSpec
+
 | Make target | Эквивалент |
 |-------------|-----------|
+| `make api-install` | `npm ci` (в корне) |
+| `make api-compile` | `npx tsp compile .` → `tsp-output/schema/openapi.yaml` |
+
+### Frontend
+
+| Make target | Эквивалент |
+|-------------|-----------|
+| `make frontend-install` | `cd frontend && npm ci` |
+| `make frontend-env` | `cp -n frontend/.env.example frontend/.env` |
 | `make frontend-dev` | `cd frontend && npm run dev` |
-| `make frontend-build` | `cd frontend && npm run build` (сначала `tsc -b`) |
-| `make frontend-preview` | `cd frontend && npm run preview` (Vite preview продакшн-сборки) |
+| `make frontend-build` | `cd frontend && npm run build` (`tsc -b && vite build`) |
+| `make frontend-preview` | `cd frontend && npm run preview` |
+| `make frontend-generate-types` | `cd frontend && npm run generate:types` |
 | `make mock` | `cd frontend && npx prism mock ../tsp-output/schema/openapi.yaml -p 8080` |
+| `make dev-full` | `cd frontend && npm run dev:full` (mock + dev параллельно) |
+
+ESLint: `cd frontend && npm run lint` (в Makefile нет).
+
+### Backend
+
+| Make target | Эквивалент |
+|-------------|-----------|
 | `make backend-install` | `cd backend && go mod tidy` |
+| `make backend-env` | `cp -n backend/.env.example backend/.env` |
 | `make backend-build` | `cd backend && go build ./cmd/server` |
 | `make backend-run` | `cd backend && go run ./cmd/server` |
 | `make backend-lint` | `cd backend && go vet ./...` |
+| `make backend-migrate` | `cd backend && migrate -path migrations -database "$DATABASE_URL" up` |
+| `make backend-migrate-create name=<name>` | `cd backend && migrate create -ext sql -dir migrations -seq <name>` |
 
-Только фронтенд: `cd frontend && npm run lint` (ESLint).
+### Common
+
+| Make target | Эквивалент |
+|-------------|-----------|
+| `make install` | `npm ci` в корне + `cd frontend && npm ci` |
 
 ## Окружение
 
-- `VITE_API_URL` — базовый URL API (по умолчанию `http://localhost:8080`)
-- Vite резолвит импорты `@/` в `frontend/src/`
-- Бэкенд: `PORT` (по умолчанию `8080`), `DATABASE_URL` (по умолчанию `postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable`)
+| Переменная | По умолчанию | Где |
+|-----------|-------------|-----|
+| `VITE_API_URL` | `http://localhost:8080` | `frontend/.env` |
+| `PORT` | `8080` | `backend/.env` |
+| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable` | `backend/.env` |
+
+Первый запуск бэкенда:
+```bash
+make backend-env          # скопировать .env
+make backend-install      # go mod tidy
+make backend-migrate      # применить миграции (000001_init + 000002_seed)
+make backend-run
+```
+
+Vite резолвит `@/` → `frontend/src/`.
+
+## Миграции
+
+Требуют CLI: `migrate` из `golang-migrate/migrate`.
+
+Команда `backend-migrate` применяет **все pending миграции**, включая `000002_seed.up.sql` (сид-данные).
+
+```
+backend/migrations/
+  000001_init.up/down.sql    — создание таблиц (owners, meeting_types, participants, meetings, meeting_participants)
+  000002_seed.up.sql          — демо-данные (Owner "demo" с adminSlug=demo, clientSlug=demo)
+```
 
 ## Соглашения по коду
 
-- TypeScript strict mode: `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax` (используй `import type` для импортов только типов)
-- `erasableSyntaxOnly: true` — запрещены `enum`, `namespace` (кроме `declare`), parameter properties
-- PostCSS с пресетом Mantine (`postcss-preset-mantine`)
-- ESLint с `typescript-eslint` strict + плагин `react-refresh`
-- Сгенерированный файл типов `frontend/src/types/api.ts` закоммичен; перегенерируй после изменений API
+- **TypeScript strict mode**: `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax` (используй `import type` для типов)
+- **`erasableSyntaxOnly: true`**: запрещены `enum`, `namespace` (кроме `declare`), parameter properties
+- **`noEmit: true`**: `tsc` только проверяет типы, сборку делает Vite
+- **Project references**: `tsconfig.json` → `tsconfig.app.json` (src/) + `tsconfig.node.json` (vite.config.ts)
+- **PostCSS**: `postcss-preset-mantine`
+- **ESLint**: `typescript-eslint` strict + `react-refresh`
+- **Сгенерированный `frontend/src/types/api.ts`** закоммичен; перегенерируй после изменений API
 
 ## Особенности проекта
 
-- **В проекте нет тестов** — ни одной тестовой зависимости или скрипта. При добавлении функционала тесты нужно писать с нуля.
-- **Prism mock-сервер не сохраняет состояние** между запросами. Любые созданные данные живут только в рамках одного запроса.
-- **TypeScript использует project references** (`tsconfig.json` → `tsconfig.app.json` + `tsconfig.node.json`). `tsc -b` собирает оба.
-- **Бэкенд требует PostgreSQL** — применить миграции: `migrate -path backend/migrations -database "$DATABASE_URL" up`.
+- **Нет тестов** — при добавлении писать с нуля.
+- **Prism mock stateless** — данные живут только в рамках одного запроса.
+- **Бэкенд требует PostgreSQL** — миграции через `golang-migrate`.
+- **godotenv** — загружает `.env` автоматически при старте бэкенда.
 
 ## Архитектура
 
-- **TypeSpec модели** (`models/*.tsp`) описывают сущности в пространстве имён `MeetingBooking`
-- **TypeSpec API** (`apis/admin.tsp`, `apis/user.tsp`) определяют роуты `/admin/{adminSlug}` и `/client/{ownerSlug}`
-- **API-клиенты фронтенда** в `frontend/src/api/` используют сгенерированные из OpenAPI типы
+- **TypeSpec**: `models/{owner,meeting-type,participant,meeting}.tsp` (namespace `MeetingBooking`) + `apis/admin.tsp` (namespace `Admin`) + `apis/user.tsp` (namespace `Client`)
+- **API-клиенты фронтенда** (`src/api/{admin,user,client}.ts`) используют сгенерированные из OpenAPI типы
 - **Роуты** зеркалируют API: `/admin/:adminSlug/*` (управление) и `/client/:ownerSlug/*` (бронирование)
-- **Бэкенд** (`backend/`): Go 1.26, chi v5, sqlx + PostgreSQL, миграции в `backend/migrations/`
-- **Доменный язык** описан в `CONTEXT.md` — читать для понимания терминов (Owner, MeetingType, Participant, Meeting)
+- **Бэкенд**: handler → service → repository/sqlx; DI в `main.go`
+- **Доменный язык**: `CONTEXT.md` — Owner, MeetingType, Participant, Meeting
