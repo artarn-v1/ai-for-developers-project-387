@@ -1,179 +1,90 @@
 # AGENTS.md
 
-## Обзор
+## Repo layout
 
-Meeting Booking Service — монорепозиторий из трёх пакетов:
-
-| Директория | Технологии | Входная точка |
-|-----------|------|----------------------|
-| корень | TypeSpec 1.12 | `main.tsp` → OpenAPI 3.1.0 YAML |
+| Directory | Stack | Entrypoint |
+|-----------|-------|------------|
+| root | TypeSpec 1.12 | `main.tsp` → `tsp-output/schema/openapi.yaml` |
 | `backend/` | Go 1.26 + chi v5 + sqlx + PostgreSQL | `cmd/server/main.go` |
-| `frontend/` | React 19 + Vite + Mantine 9 + TanStack Query 5 + React Router v7 | `src/main.tsx` |
+| `frontend/` | React 19 + Vite 8 + Mantine 9 + TanStack Query 5 | `src/main.tsx` |
+| `tests/` | Playwright + TypeScript | `specs/*.spec.ts` |
 
-## Рабочий процесс
+## Critical workflow
+
+After changing `.tsp` files, run in order:
 
 ```bash
-make install                 # npm ci в корне + frontend/
 make api-compile             # tsp compile . → tsp-output/schema/openapi.yaml
 make frontend-generate-types # openapi-typescript → frontend/src/types/api.ts
 ```
 
-**Обязательный порядок** после изменения `.tsp`: `api-compile` → `frontend-generate-types`.
+- `tsp-output/` is gitignored — must be regenerated
+- `frontend/src/types/api.ts` **is committed** — regenerate after API changes
 
-`tsp-output/` в `.gitignore` — каталог не закоммичен, всегда генерируй с `make api-compile`.
+## Commands
+
+All via `make` (see Makefile for full list). Key ones:
+
+| Target | What it does |
+|--------|-------------|
+| `make install` | `npm ci` in root + `frontend/` |
+| `make api-compile` | `npx tsp compile .` |
+| `make frontend-generate-types` | openapi-typescript → `frontend/src/types/api.ts` |
+| `make frontend-build` | `tsc -b && vite build` (typecheck + bundle) |
+| `make dev-full` | Prism mock (port 8080) + Vite concurrently |
+| `make backend-migrate` | Runs `migrate up` — requires `DATABASE_URL` in env |
+| `make backend-migrate-create name=<n>` | Creates numbered SQL migration |
+| `make mock` | Prism stateless mock on port 8080 |
+
+Frontend lint: `cd frontend && npm run lint`
+
+## First backend startup
 
 ```bash
-make dev-full                # Prism mock (порт 8080) + Vite одновременно
-```
-
-## Команды
-
-### TypeSpec
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make api-install` | `npm ci` (в корне) |
-| `make api-compile` | `npx tsp compile .` → `tsp-output/schema/openapi.yaml` |
-
-### Frontend
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make frontend-install` | `cd frontend && npm ci` |
-| `make frontend-env` | `cp -n frontend/.env.example frontend/.env` |
-| `make frontend-dev` | `cd frontend && npm run dev` |
-| `make frontend-build` | `cd frontend && npm run build` (`tsc -b && vite build`) |
-| `make frontend-preview` | `cd frontend && npm run preview` |
-| `make frontend-generate-types` | `cd frontend && npm run generate:types` |
-| `make mock` | `cd frontend && npm run mock` (Prism stateless, 8080) |
-| `make dev-full` | `cd frontend && npm run dev:full` (mock + dev параллельно) |
-
-ESLint: `cd frontend && npm run lint` (в Makefile нет).
-
-### Backend
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make backend-install` | `cd backend && go mod tidy` |
-| `make backend-env` | `cp -n backend/.env.example backend/.env` |
-| `make backend-build` | `cd backend && go build ./cmd/server` |
-| `make backend-run` | `cd backend && go run ./cmd/server` |
-| `make backend-lint` | `cd backend && go vet ./...` |
-| `make backend-migrate` | `cd backend && migrate -path migrations -database "$(DATABASE_URL)" up` |
-| `make backend-migrate-create name=<name>` | `cd backend && migrate create -ext sql -dir migrations -seq <name>` |
-
-`backend-migrate` читает `DATABASE_URL` из окружения (через `$(DATABASE_URL)`). Перед запуском убедись, что БД доступна и переменная установлена.
-
-### Docker
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make docker-build` | `docker compose build` |
-| `make docker-up` | `docker compose up -d` |
-| `make docker-down` | `docker compose down` |
-| `make docker-logs` | `docker compose logs -f` |
-| `make docker-restart` | `docker compose down && docker compose up -d` |
-| `make docker-recreate-db` | `docker compose down -v` (удаляет volume `db-data`) + `docker compose up -d` + `make backend-migrate` |
-
-### Common
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make install` | `npm ci` в корне + `cd frontend && npm ci` |
-
-## Окружение
-
-| Переменная | По умолчанию | Где |
-|-----------|-------------|-----|
-| `VITE_API_URL` | `http://localhost:8080` | `frontend/.env` |
-| `PORT` | `8080` | `backend/.env` |
-| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable` | `backend/.env` |
-
-Первый запуск бэкенда:
-```bash
-make backend-env          # скопировать .env
-make backend-install      # go mod tidy
-make backend-migrate      # применить миграции
+make backend-env        # cp .env.example → .env
+make backend-install    # go mod tidy
+make backend-migrate    # requires PostgreSQL, reads $DATABASE_URL
 make backend-run
 ```
 
-Vite резолвит `@/` → `frontend/src/`.
+## Backend quirks
 
-## Миграции
+- `godotenv` loads `.env` automatically at startup (`config.go`)
+- DB exclusion constraint `meetings_no_overlap` (via `btree_gist`) prevents slot overlap at DB level
+- Handler split: `admin_handler.go` + `client_handler.go`
+- DI wiring in `cmd/server/main.go`: handler → service → repository/sqlx
 
-Требуют CLI: `migrate` из `golang-migrate/migrate`.
+## Frontend quirks
 
-## Conventional Commits
+- `import type` required (`verbatimModuleSyntax: true`)
+- `enum` / `namespace` / parameter properties forbidden (`erasableSyntaxOnly: true`)
+- `noEmit: true` — Vite builds, tsc only checks types
+- Tsconfig project references: `tsconfig.json` → `tsconfig.app.json` (src) + `tsconfig.node.json` (config)
+- `@/` → `src/` (Vite alias)
+- API client: `src/api/client.ts` (raw fetch), `src/api/admin.ts` + `src/api/user.ts` (typed via generated types)
+- Routes mirror API: `/admin/:adminSlug/*` (management) and `/client/:ownerSlug/*` (booking)
 
-Все коммиты должны соответствовать [Conventional Commits 1.0](https://www.conventionalcommits.org/).
+## E2E tests (Playwright)
 
-**Типы:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-
-**Скоупы** (необязательны, но если указаны, то из списка): `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`.
-
-Примеры:
-```
-feat(backend): add cancel meeting endpoint
-fix(frontend): handle empty participants list
-docs: update AGENTS.md with commit rules
-chore(deps): bump mantine to 9.4.0
-```
-
-Локально коммиты проверяются `commitlint` через `husky` (хук `commit-msg`). Перед коммитом `lint-staged` прогоняет `eslint` на staged TS-файлах и `go vet` на staged Go-файлах (хук `pre-commit`).
-
-В CI (GitHub Actions) коммиты PR проверяются на соответствие формату.
-
-**Установка хуков** — автоматически через `npm ci` (скрипт `prepare`).
-
-## Соглашения по коду
-
-- **TypeScript strict mode**: `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax` (используй `import type` для типов)
-- **`erasableSyntaxOnly: true`**: запрещены `enum`, `namespace` (кроме `declare`), parameter properties
-- **`noEmit: true`**: `tsc` только проверяет типы, сборку делает Vite
-- **Project references**: `tsconfig.json` → `tsconfig.app.json` (src/) + `tsconfig.node.json` (vite.config.ts)
-- **PostCSS**: `postcss-preset-mantine`
-- **ESLint**: `typescript-eslint` strict + `react-refresh`
-- **Сгенерированный `frontend/src/types/api.ts`** закоммичен; перегенерируй после изменений API
-
-## E2E тесты (Playwright)
-
-| Make target | Эквивалент |
-|-------------|-----------|
-| `make test-e2e-install` | `cd tests && npm ci` |
-| `make test-e2e-up` | `docker compose up -d` (БД + бэкенд + фронтенд) |
-| `make test-e2e` | `docker compose up -d` + `cd tests && npx playwright test` |
-| `make test-e2e-ui` | `docker compose up -d` + `cd tests && npx playwright test --ui` |
-| `make test-e2e-report` | `cd tests && npx playwright show-report` |
-
-**Как работает:** `docker compose up -d` поднимает PostgreSQL + бэкенд (применяет миграции, включая seed) + фронтенд (nginx на порту 80, проксирует `/api/` на бэкенд). Playwright запускается на хосте, ходит на `http://localhost:80`.
-
-**API-хелперы** (`tests/helpers/api.ts`) для прямой подготовки тестовых данных через бэкенд (порт 8080).
-
-**Seed-данные:** владелец `Evgeny` (adminSlug: `evgeny-admin`, clientSlug: `evgeny`, timezone: `Europe/Moscow`) с типом встречи «Личное напоминание про масло».
-
-**Перед первым запуском:**
 ```bash
-make test-e2e-install   # npm ci в tests/
-npx playwright install chromium  # установка браузера
-make test-e2e           # сборка docker + прогон тестов
-
-**Важно:** Playwright использует системный Google Chrome (`channel: 'chrome'`). Убедись, что Chrome установлен:
-```bash
-which google-chrome-stable
-```
-Если нет — `npx playwright install chromium` для загрузки встроенного Chromium.
+make test-e2e-install  # npm ci in tests/
+make test-e2e          # docker compose up -d + playwright test
+make test-e2e-ui       # same but --ui mode
 ```
 
-## Особенности проекта
+**How it works:** `docker compose up -d` starts PostgreSQL → backend (auto-migrates) → frontend (nginx on port 80 proxying `/api/` to backend). Playwright runs on host against `http://localhost:80`. API helpers (`tests/helpers/api.ts`) talk directly to backend on port 8080.
 
-- **Prism mock stateless** — данные живут только в рамках одного запроса.
-- **Бэкенд требует PostgreSQL** — миграции через `golang-migrate`.
-- **godotenv** — загружает `.env` автоматически при старте бэкенда (`config.go`).
+**Seed data:** Owner `Evgeny` (adminSlug: `evgeny-admin`, clientSlug: `evgeny`, timezone: `Europe/Moscow`) with meeting type «Личное напоминание про масло».
 
-## Архитектура
+**Requires Chrome:** Playwright uses `channel: 'chromium'`. If missing: `npx playwright install chromium`.
 
-- **TypeSpec**: `models/{owner,meeting-type,participant,meeting}.tsp` (namespace `MeetingBooking`) + `apis/admin.tsp` (namespace `Admin`) + `apis/user.tsp` (namespace `Client`)
-- **API-клиенты фронтенда** (`src/api/admin.ts`, `src/api/user.ts`) используют сгенерированные из OpenAPI типы; `src/api/client.ts` — общий HTTP-helper (fetch)
-- **Роуты** зеркалируют API: `/admin/:adminSlug/*` (управление) и `/client/:ownerSlug/*` (бронирование)
-- **Бэкенд**: handler → service → repository/sqlx; DI в `main.go`
-- **Доменный язык**: `CONTEXT.md` — Owner, MeetingType, Participant, Meeting
+## CI / Branching
+
+- **commitlint** enforces Conventional Commits on PR (scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`)
+- **Pre-commit hook** (husky + lint-staged): eslint on staged TS files, `go vet` on staged Go files
+- **Release Please** on main branch — 3 release components (root `v*`, `frontend/v*`, `backend/v*`)
+- **E2E** runs on push to main and PRs (builds Docker images, runs Playwright)
+
+## Domain language
+
+See `CONTEXT.md` for full glossary. Core entities: Owner, MeetingType, Participant, Meeting, MeetingParticipant.

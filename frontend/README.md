@@ -15,6 +15,8 @@ React-клиент для сервиса бронирования встреч. 
 - **PostCSS** + `postcss-preset-mantine` — стилизация
 - **ESLint** + `typescript-eslint` — линтинг
 - **@stoplight/prism-cli** — mock-сервер для разработки без бэкенда
+- **concurrently** — одновременный запуск mock + dev
+- **Docker** + **nginx** — production-сборка
 
 ## Структура
 
@@ -42,7 +44,10 @@ src/
 │   └── api.ts                — сгенерированные типы из OpenAPI
 ├── theme.ts                  — дизайн-токены (COLORS)
 ├── App.tsx                   — роутинг
-└── main.tsx                  — входная точка (QueryClient, MantineProvider)
+├── main.tsx                  — входная точка (QueryClient, MantineProvider)
+└── index.css                 — глобальные стили
+Dockerfile                    — multi-stage сборка (node → nginx)
+nginx.conf                    — прокси /api/ → backend
 ```
 
 ## Роуты
@@ -71,9 +76,14 @@ src/
 |-------|----------|------------|
 | `bg` | `#18181b` | Фон страницы |
 | `cardBg` | `#27272a` | Фон карточек |
+| `border` | `#3f3f46` | Границы |
 | `text` | `#f4f4f5` | Основной текст |
+| `mutedText` | `#a1a1aa` | Второстепенный текст |
 | `slotAvailable` | `#22c55e` | Свободный слот |
 | `slotOccupied` | `#52525b` | Занятый слот |
+| `avatarBg` | `#3f6212` | Фон аватара |
+| `inputBg` | `#27272a` | Фон полей ввода |
+| `inputBorder` | `#3f3f46` | Граница полей ввода |
 
 ## Переменные окружения
 
@@ -110,4 +120,16 @@ cd frontend && npm run lint                # ESLint
 
 # Установка зависимостей
 make frontend-install                      # npm ci
+```
+
+## Docker
+
+```bash
+make docker-build              # docker compose build
+make docker-up                 # docker compose up -d (nginx + backend + БД)
+make docker-down               # docker compose down
+```
+
+Dockerfile — multi-stage: сборка статики (node:22-alpine) → nginx.  
+`nginx.conf` проксирует `/api/` на бэкенд (http://backend:8080), статика отдаётся напрямую.
 ```
