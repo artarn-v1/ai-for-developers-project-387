@@ -73,6 +73,7 @@ ESLint: `cd frontend && npm run lint` (в Makefile нет).
 | `make docker-down` | `docker compose down` |
 | `make docker-logs` | `docker compose logs -f` |
 | `make docker-restart` | `docker compose down && docker compose up -d` |
+| `make docker-recreate-db` | `docker compose down -v` (удаляет volume `db-data`) + `docker compose up -d` + `make backend-migrate` |
 
 ### Common
 

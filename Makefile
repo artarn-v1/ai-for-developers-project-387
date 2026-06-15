@@ -79,6 +79,11 @@ docker-logs:
 
 docker-restart: docker-down docker-up
 
+docker-recreate-db:
+	docker compose down -v
+	docker compose up -d
+	$(MAKE) backend-migrate
+
 # ---- E2E Tests (Playwright) ----
 
 test-e2e-install:
@@ -103,5 +108,5 @@ test-e2e-report:
 .PHONY: api-install api-compile
 .PHONY: frontend-install frontend-env frontend-dev frontend-build frontend-preview frontend-generate-types mock dev-full
 .PHONY: backend-install backend-env backend-build backend-run backend-lint backend-migrate backend-migrate-create
-.PHONY: docker-build docker-up docker-down docker-logs docker-restart
+.PHONY: docker-build docker-up docker-down docker-logs docker-restart docker-recreate-db
 .PHONY: test-e2e-install test-e2e-up test-e2e test-e2e-ui test-e2e-debug test-e2e-report
