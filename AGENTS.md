@@ -112,9 +112,37 @@ Vite резолвит `@/` → `frontend/src/`.
 - **ESLint**: `typescript-eslint` strict + `react-refresh`
 - **Сгенерированный `frontend/src/types/api.ts`** закоммичен; перегенерируй после изменений API
 
+## E2E тесты (Playwright)
+
+| Make target | Эквивалент |
+|-------------|-----------|
+| `make test-e2e-install` | `cd tests && npm ci` |
+| `make test-e2e-up` | `docker compose up -d` (БД + бэкенд + фронтенд) |
+| `make test-e2e` | `docker compose up -d` + `cd tests && npx playwright test` |
+| `make test-e2e-ui` | `docker compose up -d` + `cd tests && npx playwright test --ui` |
+| `make test-e2e-report` | `cd tests && npx playwright show-report` |
+
+**Как работает:** `docker compose up -d` поднимает PostgreSQL + бэкенд (применяет миграции, включая seed) + фронтенд (nginx на порту 80, проксирует `/api/` на бэкенд). Playwright запускается на хосте, ходит на `http://localhost:80`.
+
+**API-хелперы** (`tests/helpers/api.ts`) для прямой подготовки тестовых данных через бэкенд (порт 8080).
+
+**Seed-данные:** владелец `Evgeny` (adminSlug: `evgeny-admin`, clientSlug: `evgeny`, timezone: `Europe/Moscow`) с типом встречи «Личное напоминание про масло».
+
+**Перед первым запуском:**
+```bash
+make test-e2e-install   # npm ci в tests/
+npx playwright install chromium  # установка браузера
+make test-e2e           # сборка docker + прогон тестов
+
+**Важно:** Playwright использует системный Google Chrome (`channel: 'chrome'`). Убедись, что Chrome установлен:
+```bash
+which google-chrome-stable
+```
+Если нет — `npx playwright install chromium` для загрузки встроенного Chromium.
+```
+
 ## Особенности проекта
 
-- **Нет тестов** — при добавлении писать с нуля.
 - **Prism mock stateless** — данные живут только в рамках одного запроса.
 - **Бэкенд требует PostgreSQL** — миграции через `golang-migrate`.
 - **godotenv** — загружает `.env` автоматически при старте бэкенда (`config.go`).

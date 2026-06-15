@@ -14,3 +14,8 @@ node_modules/
 # Go binaries
 backend/server
 backend/server.exe
+
+# Playwright test artifacts
+tests/playwright-report/
+tests/test-results/
+tests/node_modules/

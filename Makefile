@@ -79,8 +79,29 @@ docker-logs:
 
 docker-restart: docker-down docker-up
 
+# ---- E2E Tests (Playwright) ----
+
+test-e2e-install:
+	cd tests && npm ci
+
+test-e2e-up:
+	docker compose up -d
+
+test-e2e: test-e2e-up
+	cd tests && npx playwright test
+
+test-e2e-ui: test-e2e-up
+	cd tests && npx playwright test --ui
+
+test-e2e-debug: test-e2e-up
+	cd tests && npx playwright test --debug
+
+test-e2e-report:
+	cd tests && npx playwright show-report
+
 .PHONY: install install-all
 .PHONY: api-install api-compile
 .PHONY: frontend-install frontend-env frontend-dev frontend-build frontend-preview frontend-generate-types mock dev-full
 .PHONY: backend-install backend-env backend-build backend-run backend-lint backend-migrate backend-migrate-create
 .PHONY: docker-build docker-up docker-down docker-logs docker-restart
+.PHONY: test-e2e-install test-e2e-up test-e2e test-e2e-ui test-e2e-debug test-e2e-report
