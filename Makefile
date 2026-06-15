@@ -6,6 +6,12 @@ install:
 
 install-all: install
 
+lint-commits:
+	git log -1 --format=%s | npx commitlint
+
+lint-commits-ci:
+	npx commitlint --from $$(git merge-base HEAD origin/HEAD) --to HEAD
+
 # ---- TypeScript ----
 
 api-install:
@@ -104,7 +110,7 @@ test-e2e-debug: test-e2e-up
 test-e2e-report:
 	cd tests && npx playwright show-report
 
-.PHONY: install install-all
+.PHONY: install install-all lint-commits lint-commits-ci
 .PHONY: api-install api-compile
 .PHONY: frontend-install frontend-env frontend-dev frontend-build frontend-preview frontend-generate-types mock dev-full
 .PHONY: backend-install backend-env backend-build backend-run backend-lint backend-migrate backend-migrate-create

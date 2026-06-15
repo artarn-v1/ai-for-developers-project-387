@@ -103,6 +103,28 @@ Vite резолвит `@/` → `frontend/src/`.
 
 Требуют CLI: `migrate` из `golang-migrate/migrate`.
 
+## Conventional Commits
+
+Все коммиты должны соответствовать [Conventional Commits 1.0](https://www.conventionalcommits.org/).
+
+**Типы:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+
+**Скоупы** (необязательны, но если указаны, то из списка): `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`.
+
+Примеры:
+```
+feat(backend): add cancel meeting endpoint
+fix(frontend): handle empty participants list
+docs: update AGENTS.md with commit rules
+chore(deps): bump mantine to 9.4.0
+```
+
+Локально коммиты проверяются `commitlint` через `husky` (хук `commit-msg`). Перед коммитом `lint-staged` прогоняет `eslint` на staged TS-файлах и `go vet` на staged Go-файлах (хук `pre-commit`).
+
+В CI (GitHub Actions) коммиты PR проверяются на соответствие формату.
+
+**Установка хуков** — автоматически через `npm ci` (скрипт `prepare`).
+
 ## Соглашения по коду
 
 - **TypeScript strict mode**: `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax` (используй `import type` для типов)
