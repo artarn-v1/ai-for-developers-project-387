@@ -29,7 +29,7 @@ jobs:
             tag-prefix: backend/v
     steps:
       - uses: googleapis/release-please-action@v4
-        id: release-${{ matrix.component }}
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: ${{ matrix.release-type }}
