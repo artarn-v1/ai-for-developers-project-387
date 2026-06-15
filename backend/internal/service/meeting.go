@@ -85,6 +85,7 @@ func (s *MeetingService) Create(input CreateMeetingInput) (*model.Meeting, error
 		MeetingTypeID:   mt.ID,
 		StartDateTime:   input.StartDateTime,
 		DurationMinutes: mt.DurationMinutes,
+		EndDateTime:     input.StartDateTime.Add(time.Duration(mt.DurationMinutes) * time.Minute),
 		Comment:         input.Comment,
 		InitiatorID:     initiator.ID,
 	}

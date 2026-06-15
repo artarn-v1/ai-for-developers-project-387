@@ -33,6 +33,7 @@ type Meeting struct {
 	MeetingTypeID   string     `db:"meeting_type_id"`
 	StartDateTime   time.Time  `db:"start_date_time"`
 	DurationMinutes int32      `db:"duration_minutes"`
+	EndDateTime     time.Time  `db:"end_date_time"`
 	Comment         string     `db:"comment"`
 	InitiatorID     string     `db:"initiator_id"`
 	IsConfirmed     *bool      `db:"is_confirmed"`

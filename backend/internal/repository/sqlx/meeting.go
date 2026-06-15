@@ -69,8 +69,8 @@ func (r *MeetingRepo) ListOccupiedByMeetingType(meetingTypeID string) ([]model.M
 }
 
 func (r *MeetingRepo) Create(m *model.Meeting) error {
-	query := `INSERT INTO meetings (id, meeting_type_id, start_date_time, duration_minutes, comment, initiator_id, is_confirmed)
-		VALUES (:id, :meeting_type_id, :start_date_time, :duration_minutes, :comment, :initiator_id, :is_confirmed)`
+	query := `INSERT INTO meetings (id, meeting_type_id, start_date_time, duration_minutes, end_date_time, comment, initiator_id, is_confirmed)
+		VALUES (:id, :meeting_type_id, :start_date_time, :duration_minutes, :end_date_time, :comment, :initiator_id, :is_confirmed)`
 	_, err := r.db.NamedExec(query, m)
 	if err != nil {
 		var pqe *pq.Error

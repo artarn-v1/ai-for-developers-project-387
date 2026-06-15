@@ -99,11 +99,10 @@ func (h *ClientHandler) listOccupiedSlots(w http.ResponseWriter, r *http.Request
 	ctr := toClientMeetingType(mt, owner)
 	resp := make([]clientMeetingResponse, len(meetings))
 	for i, m := range meetings {
-		end := m.StartDateTime.Add(time.Duration(mt.DurationMinutes) * time.Minute)
 		resp[i] = clientMeetingResponse{
 			MeetingType:   ctr,
 			StartDateTime: m.StartDateTime.Format(time.RFC3339),
-			EndDateTime:   end.Format(time.RFC3339),
+			EndDateTime:   m.EndDateTime.Format(time.RFC3339),
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -170,11 +169,10 @@ func (h *ClientHandler) createMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	end := meeting.StartDateTime.Add(time.Duration(mt.DurationMinutes) * time.Minute)
 	resp := clientMeetingResponse{
 		MeetingType:   toClientMeetingType(mt, owner),
 		StartDateTime: meeting.StartDateTime.Format(time.RFC3339),
-		EndDateTime:   end.Format(time.RFC3339),
+		EndDateTime:   meeting.EndDateTime.Format(time.RFC3339),
 	}
 	writeJSON(w, http.StatusCreated, resp)
 }
