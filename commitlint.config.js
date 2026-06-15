@@ -9,6 +9,7 @@ export default {
       'infra',
       'deps',
       'release',
+      'main',
     ]],
     'scope-empty': [1, 'never'],
     'header-max-length': [2, 'always', 72],
