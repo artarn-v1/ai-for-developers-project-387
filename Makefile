@@ -63,7 +63,24 @@ backend-migrate:
 backend-migrate-create:
 	cd backend && migrate create -ext sql -dir migrations -seq $(name)
 
+# ---- Docker ----
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f
+
+docker-restart: docker-down docker-up
+
 .PHONY: install install-all
 .PHONY: api-install api-compile
 .PHONY: frontend-install frontend-env frontend-dev frontend-build frontend-preview frontend-generate-types mock dev-full
 .PHONY: backend-install backend-env backend-build backend-run backend-lint backend-migrate backend-migrate-create
+.PHONY: docker-build docker-up docker-down docker-logs docker-restart
