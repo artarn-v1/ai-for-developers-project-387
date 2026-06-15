@@ -20,6 +20,7 @@ make frontend-generate-types # openapi-typescript → frontend/src/types/api.ts
 
 - `tsp-output/` is gitignored — must be regenerated
 - `frontend/src/types/api.ts` **is committed** — regenerate after API changes
+- TypeSpec files: `apis/admin.tsp`, `apis/user.tsp`, `apis/owners.tsp`, `models/*.tsp`
 
 ## Commands
 
@@ -34,6 +35,7 @@ All via `make` (see Makefile for full list). Key ones:
 | `make dev-full` | Prism mock (port 8080) + Vite concurrently |
 | `make backend-migrate` | Runs `migrate up` — requires `DATABASE_URL` in env |
 | `make backend-migrate-create name=<n>` | Creates numbered SQL migration |
+| `make backend-lint` | `go vet ./...` |
 | `make mock` | Prism stateless mock on port 8080 |
 
 Frontend lint: `cd frontend && npm run lint`
@@ -62,7 +64,7 @@ make backend-run
 - Tsconfig project references: `tsconfig.json` → `tsconfig.app.json` (src) + `tsconfig.node.json` (config)
 - `@/` → `src/` (Vite alias)
 - API client: `src/api/client.ts` (raw fetch), `src/api/admin.ts` + `src/api/user.ts` (typed via generated types)
-- Routes mirror API: `/admin/:adminSlug/*` (management) and `/client/:ownerSlug/*` (booking)
+- Routes: `/` → `OwnersPage` (list of owners → link to `/client/:ownerSlug`), `/admin/:adminSlug/*` (management), `/client/:ownerSlug/*` (booking)
 
 ## E2E tests (Playwright)
 
@@ -75,6 +77,8 @@ make test-e2e-ui       # same but --ui mode
 **How it works:** `docker compose up -d` starts PostgreSQL → backend (auto-migrates) → frontend (nginx on port 80 proxying `/api/` to backend). Playwright runs on host against `http://localhost:80`. API helpers (`tests/helpers/api.ts`) talk directly to backend on port 8080.
 
 **Seed data:** Owner `Evgeny` (adminSlug: `evgeny-admin`, clientSlug: `evgeny`, timezone: `Europe/Moscow`) with meeting type «Личное напоминание про масло».
+
+**Specs:** `admin-meeting-types.spec.ts`, `client-booking.spec.ts`, `owners-list.spec.ts`, `full-e2e.spec.ts`.
 
 **Requires Chrome:** Playwright uses `channel: 'chromium'`. If missing: `npx playwright install chromium`.
 

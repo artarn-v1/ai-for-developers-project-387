@@ -177,6 +177,23 @@ func (h *ClientHandler) createMeeting(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, resp)
 }
 
+func (h *ClientHandler) ListOwners(w http.ResponseWriter, r *http.Request) {
+	owners, err := h.ownerRepo.ListAll()
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resp := make([]ownerResponse, len(owners))
+	for i, o := range owners {
+		resp[i] = ownerResponse{
+			Name:       o.Name,
+			ClientSlug: o.ClientSlug,
+			TimeZone:   o.TimeZone,
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *ClientHandler) ownerFromSlug(r *http.Request) (*model.Owner, error) {
 	slug := chi.URLParam(r, "ownerSlug")
 	return h.ownerRepo.FindByClientSlug(slug)

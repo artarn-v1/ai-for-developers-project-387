@@ -57,6 +57,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	r.Get("/owners", clientHandler.ListOwners)
+
 	r.Route("/admin/{adminSlug}", func(r chi.Router) {
 		r.Mount("/", adminHandler.Routes())
 	})

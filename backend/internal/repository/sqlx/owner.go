@@ -33,4 +33,13 @@ func (r *OwnerRepo) FindByClientSlug(slug string) (*model.Owner, error) {
 	return &o, nil
 }
 
+func (r *OwnerRepo) ListAll() ([]model.Owner, error) {
+	var owners []model.Owner
+	err := r.db.Select(&owners, "SELECT * FROM owners")
+	if err != nil {
+		return nil, err
+	}
+	return owners, nil
+}
+
 var _ repository.OwnerRepository = (*OwnerRepo)(nil)

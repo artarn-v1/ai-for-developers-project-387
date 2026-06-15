@@ -33,6 +33,12 @@ type adminMeetingResponse struct {
 	Participants  []participantDTO       `json:"participants"`
 }
 
+type ownerResponse struct {
+	Name       string `json:"name"`
+	ClientSlug string `json:"clientSlug"`
+	TimeZone   string `json:"timeZone"`
+}
+
 type clientOwnerResponse struct {
 	Name       string `json:"name"`
 	ClientSlug string `json:"clientSlug"`

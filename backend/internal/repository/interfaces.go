@@ -12,6 +12,7 @@ var ErrSlotOccupied = errors.New("time slot is already occupied")
 type OwnerRepository interface {
 	FindByAdminSlug(slug string) (*model.Owner, error)
 	FindByClientSlug(slug string) (*model.Owner, error)
+	ListAll() ([]model.Owner, error)
 }
 
 type MeetingTypeRepository interface {

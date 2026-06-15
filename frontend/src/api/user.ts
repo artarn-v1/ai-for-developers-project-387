@@ -1,7 +1,12 @@
 import { api } from './client.ts'
 import type { components } from '../types/api.ts'
 
+type OwnerResponse = components['schemas']['Public.OwnerResponse']
 type ClientMeetingTypeResponse = components['schemas']['Client.ClientMeetingTypeResponse']
+
+export function getOwners() {
+  return api.get<OwnerResponse[]>('/owners')
+}
 type ClientMeetingResponse = components['schemas']['Client.ClientMeetingResponse']
 type CreateMeetingRequest = components['schemas']['Client.CreateMeetingRequest']
 

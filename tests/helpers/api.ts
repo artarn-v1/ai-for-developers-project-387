@@ -1,5 +1,11 @@
 const API_BASE = 'http://localhost:8080'
 
+export interface OwnerResponse {
+  name: string
+  clientSlug: string
+  timeZone: string
+}
+
 export interface MeetingTypeInput {
   name: string
   description: string
@@ -66,6 +72,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T
   return res.json()
+}
+
+export async function getOwners(): Promise<OwnerResponse[]> {
+  return request<OwnerResponse[]>('/owners')
 }
 
 export async function createMeetingType(

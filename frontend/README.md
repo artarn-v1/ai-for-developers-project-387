@@ -25,12 +25,13 @@ src/
 ├── api/
 │   ├── client.ts             — HTTP-клиент (fetch + ApiError)
 │   ├── admin.ts              — API-вызовы для админки
-│   └── user.ts               — API-вызовы для бронирования
+│   └── user.ts               — API-вызовы для бронирования + список владельцев
 ├── components/
 │   └── CodeBlock.tsx         — подсветка кода (JSON, curl)
 ├── lib/
 │   └── datetime.ts           — утилиты для работы с датами
 ├── routes/
+│   ├── OwnersPage.tsx        — главная страница со списком владельцев
 │   ├── admin/
 │   │   ├── AdminLayout.tsx   — layout админки (навигация)
 │   │   ├── MeetingTypesPage.tsx — управление типами встреч
@@ -54,7 +55,7 @@ nginx.conf                    — прокси /api/ → backend
 
 | URL | Страница | Описание |
 |-----|----------|----------|
-| `/` | — | Редирект на `/admin/demo` |
+| `/` | OwnersPage | Главная — список владельцев со ссылками на `/client/:ownerSlug` |
 | `/admin/:adminSlug` | AdminLayout | Layout админки (редирект на `meeting-types`) |
 | `/admin/:adminSlug/meeting-types` | MeetingTypesPage | Типы встреч (создание, вкл/выкл) |
 | `/admin/:adminSlug/meetings` | MeetingsPage | Список встреч (фильтр, подтверждение/отклонение) |
@@ -63,6 +64,7 @@ nginx.conf                    — прокси /api/ → backend
 | `*` | NotFound | 404 |
 
 Примеры:
+- `/`
 - `/admin/demo/meeting-types`
 - `/admin/john/meetings`
 - `/client/john`

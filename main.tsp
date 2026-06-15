@@ -8,6 +8,7 @@ import "./models/meeting.tsp";
 
 import "./apis/admin.tsp";
 import "./apis/user.tsp";
+import "./apis/owners.tsp";
 
 using Http;
 using Rest;
