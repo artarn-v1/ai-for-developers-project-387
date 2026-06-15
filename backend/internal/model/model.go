@@ -29,12 +29,13 @@ type Participant struct {
 }
 
 type Meeting struct {
-	ID            string     `db:"id"`
-	MeetingTypeID string     `db:"meeting_type_id"`
-	StartDateTime time.Time  `db:"start_date_time"`
-	Comment       string     `db:"comment"`
-	InitiatorID   string     `db:"initiator_id"`
-	IsConfirmed   *bool      `db:"is_confirmed"`
+	ID              string     `db:"id"`
+	MeetingTypeID   string     `db:"meeting_type_id"`
+	StartDateTime   time.Time  `db:"start_date_time"`
+	DurationMinutes int32      `db:"duration_minutes"`
+	Comment         string     `db:"comment"`
+	InitiatorID     string     `db:"initiator_id"`
+	IsConfirmed     *bool      `db:"is_confirmed"`
 }
 
 type MeetingParticipant struct {

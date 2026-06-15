@@ -1,10 +1,13 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"github.com/hexlet/meeting-booking/backend/internal/model"
 )
+
+var ErrSlotOccupied = errors.New("time slot is already occupied")
 
 type OwnerRepository interface {
 	FindByAdminSlug(slug string) (*model.Owner, error)

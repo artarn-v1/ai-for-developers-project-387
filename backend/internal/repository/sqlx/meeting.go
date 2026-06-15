@@ -2,9 +2,11 @@ package sqlx
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 
 	"github.com/hexlet/meeting-booking/backend/internal/model"
 	"github.com/hexlet/meeting-booking/backend/internal/repository"
@@ -67,10 +69,17 @@ func (r *MeetingRepo) ListOccupiedByMeetingType(meetingTypeID string) ([]model.M
 }
 
 func (r *MeetingRepo) Create(m *model.Meeting) error {
-	query := `INSERT INTO meetings (id, meeting_type_id, start_date_time, comment, initiator_id, is_confirmed)
-		VALUES (:id, :meeting_type_id, :start_date_time, :comment, :initiator_id, :is_confirmed)`
+	query := `INSERT INTO meetings (id, meeting_type_id, start_date_time, duration_minutes, comment, initiator_id, is_confirmed)
+		VALUES (:id, :meeting_type_id, :start_date_time, :duration_minutes, :comment, :initiator_id, :is_confirmed)`
 	_, err := r.db.NamedExec(query, m)
-	return err
+	if err != nil {
+		var pqe *pq.Error
+		if errors.As(err, &pqe) && pqe.Code == "23P01" {
+			return repository.ErrSlotOccupied
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *MeetingRepo) UpdateStatus(id string, isConfirmed bool) error {

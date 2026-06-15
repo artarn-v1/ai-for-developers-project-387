@@ -81,13 +81,17 @@ func (s *MeetingService) Create(input CreateMeetingInput) (*model.Meeting, error
 	}
 
 	meeting := &model.Meeting{
-		ID:            uuid.NewString(),
-		MeetingTypeID: mt.ID,
-		StartDateTime: input.StartDateTime,
-		Comment:       input.Comment,
-		InitiatorID:   initiator.ID,
+		ID:              uuid.NewString(),
+		MeetingTypeID:   mt.ID,
+		StartDateTime:   input.StartDateTime,
+		DurationMinutes: mt.DurationMinutes,
+		Comment:         input.Comment,
+		InitiatorID:     initiator.ID,
 	}
 	if err := s.mRepo.Create(meeting); err != nil {
+		if errors.Is(err, repository.ErrSlotOccupied) {
+			return nil, ErrSlotOccupied
+		}
 		return nil, err
 	}
 
