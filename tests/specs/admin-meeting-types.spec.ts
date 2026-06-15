@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createMeetingType, getMeetingTypes } from '../helpers/api.ts'
+import { getMeetingTypes } from '../helpers/api.ts'
 
 const ADMIN_SLUG = 'evgeny-admin'
 
@@ -35,7 +35,6 @@ test.describe('Admin: Meeting Types', () => {
     const types = await getMeetingTypes(ADMIN_SLUG)
     expect(types.length).toBeGreaterThan(0)
 
-    const target = types[0]
     const switchInput = page.locator('table tbody tr').first().locator('input[type="checkbox"]')
     const currentState = await switchInput.isChecked()
 

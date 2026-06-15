@@ -3,12 +3,6 @@ import { test, expect } from '@playwright/test'
 const CLIENT_SLUG = 'evgeny'
 const testEmail = `testuser-${Date.now()}@example.com`
 
-function getTomorrowDate(): number {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.getDate()
-}
-
 test.describe('Client: Booking flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(`/client/${CLIENT_SLUG}`)
