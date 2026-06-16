@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/artarn-v1/ai-for-developers-project-386/compare/v1.0.0...v1.1.0) (2026-06-16)
+
+
+### Features
+
+* **infra:** add unified Docker image with frontend and backend ([8f581a5](https://github.com/artarn-v1/ai-for-developers-project-386/commit/8f581a5981c435155630d3e3650237b97c2ec5c6))
+
 ## 1.0.0 (2026-06-15)
 
 
