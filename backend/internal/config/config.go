@@ -9,14 +9,22 @@ import (
 type Config struct {
 	Port        string
 	DatabaseURL string
+	StorageType string
 }
 
 func Load() Config {
 	_ = godotenv.Load()
 
+	dbURL := os.Getenv("DATABASE_URL")
+	storageType := "postgres"
+	if dbURL == "" {
+		storageType = "memory"
+	}
+
 	return Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/meeting_booking?sslmode=disable"),
+		DatabaseURL: dbURL,
+		StorageType: storageType,
 	}
 }
 

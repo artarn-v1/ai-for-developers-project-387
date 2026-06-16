@@ -12,6 +12,8 @@ import (
 
 	"github.com/hexlet/meeting-booking/backend/internal/config"
 	"github.com/hexlet/meeting-booking/backend/internal/handler"
+	memoryrepo "github.com/hexlet/meeting-booking/backend/internal/repository/memory"
+	"github.com/hexlet/meeting-booking/backend/internal/repository"
 	sqlxrepo "github.com/hexlet/meeting-booking/backend/internal/repository/sqlx"
 	"github.com/hexlet/meeting-booking/backend/internal/service"
 )
@@ -19,17 +21,47 @@ import (
 func main() {
 	cfg := config.Load()
 
-	db, err := sqlx.Connect("postgres", cfg.DatabaseURL)
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	defer db.Close()
+	var (
+		ownerRepo repository.OwnerRepository
+		mtRepo    repository.MeetingTypeRepository
+		pRepo     repository.ParticipantRepository
+		mRepo     repository.MeetingRepository
+		mpRepo    repository.MeetingParticipantRepository
+		db        *sqlx.DB
+	)
 
-	ownerRepo := sqlxrepo.NewOwnerRepo(db)
-	mtRepo := sqlxrepo.NewMeetingTypeRepo(db)
-	pRepo := sqlxrepo.NewParticipantRepo(db)
-	mRepo := sqlxrepo.NewMeetingRepo(db)
-	mpRepo := sqlxrepo.NewMeetingParticipantRepo(db)
+	if cfg.StorageType == "memory" {
+		log.Println("using in-memory storage")
+
+		ownerRepoMem := memoryrepo.NewOwnerRepo()
+		mtRepoMem := memoryrepo.NewMeetingTypeRepo()
+		pRepoMem := memoryrepo.NewParticipantRepo()
+		mRepoMem := memoryrepo.NewMeetingRepo()
+		mpRepoMem := memoryrepo.NewMeetingParticipantRepo()
+
+		memoryrepo.Seed(ownerRepoMem, mtRepoMem)
+
+		ownerRepo = ownerRepoMem
+		mtRepo = mtRepoMem
+		pRepo = pRepoMem
+		mRepo = mRepoMem
+		mpRepo = mpRepoMem
+	} else {
+		log.Println("connecting to postgres database")
+
+		var err error
+		db, err = sqlx.Connect("postgres", cfg.DatabaseURL)
+		if err != nil {
+			log.Fatalf("failed to connect to database: %v", err)
+		}
+		defer db.Close()
+
+		ownerRepo = sqlxrepo.NewOwnerRepo(db)
+		mtRepo = sqlxrepo.NewMeetingTypeRepo(db)
+		pRepo = sqlxrepo.NewParticipantRepo(db)
+		mRepo = sqlxrepo.NewMeetingRepo(db)
+		mpRepo = sqlxrepo.NewMeetingParticipantRepo(db)
+	}
 
 	meetingSvc := service.NewMeetingService(mtRepo, mRepo, pRepo, mpRepo)
 
@@ -50,9 +82,11 @@ func main() {
 	r.Use(middleware.RequestID)
 
 	r.Get("/health-check", func(w http.ResponseWriter, r *http.Request) {
-		if err := db.Ping(); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			return
+		if db != nil {
+			if err := db.Ping(); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 	})
