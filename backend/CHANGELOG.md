@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/artarn-v1/ai-for-developers-project-386/compare/v1.2.0...v1.3.0) (2026-06-16)
+
+
+### Features
+
+* **backend:** add in-memory storage when DATABASE_URL is unset ([6a72c17](https://github.com/artarn-v1/ai-for-developers-project-386/commit/6a72c174020e5f706921762cda7905b1b7d6a761))
+
 ## 1.0.0 (2026-06-15)
 
 
