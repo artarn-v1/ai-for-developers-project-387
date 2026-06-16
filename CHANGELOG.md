@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/artarn-v1/ai-for-developers-project-386/compare/v1.1.0...v1.1.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **infra:** pass correct port to Go backend in entrypoint ([a3f444b](https://github.com/artarn-v1/ai-for-developers-project-386/commit/a3f444b27bf7e9bf9ffb2756a6345f212e33221e))
+
 ## [1.1.0](https://github.com/artarn-v1/ai-for-developers-project-386/compare/v1.0.0...v1.1.0) (2026-06-16)
 
 
