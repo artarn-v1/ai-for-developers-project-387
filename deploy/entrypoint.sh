@@ -9,7 +9,7 @@ echo "Running migrations..."
 migrate -path /app/migrations -database "$DATABASE_URL" up
 
 echo "Starting backend on port $BACKEND_PORT..."
-/app/server &
+PORT=$BACKEND_PORT /app/server &
 
 echo "Starting nginx on port $PORT..."
 nginx -g "daemon off;"
