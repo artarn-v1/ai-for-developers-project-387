@@ -29,8 +29,8 @@ COPY --from=backend-builder /app/migrations ./migrations
 COPY --from=migrate /usr/local/bin/migrate /usr/local/bin/migrate
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
-COPY deploy/nginx.conf.template /etc/nginx/conf.d/default.conf.template
-COPY deploy/entrypoint.sh /entrypoint.sh
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
