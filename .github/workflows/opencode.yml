@@ -27,7 +27,6 @@ jobs:
 
       - name: Run opencode
         uses: anomalyco/opencode/github@latest
-        continue-on-error: true
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
