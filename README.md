@@ -1,2 +1,3 @@
 ### Hexlet tests and linter status:
 [![Actions Status](https://github.com/artarn-v1/ai-for-developers-project-387/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/artarn-v1/ai-for-developers-project-387/actions)
+[![E2E Tests](https://github.com/artarn-v1/ai-for-developers-project-387/actions/workflows/e2e.yml/badge.svg)](https://github.com/artarn-v1/ai-for-developers-project-387/actions/workflows/e2e.yml)

@@ -1,0 +1,38 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: root
+            path: .
+            release-type: node
+            tag-prefix: v
+          - component: frontend
+            path: frontend
+            release-type: node
+            tag-prefix: frontend/v
+          - component: backend
+            path: backend
+            release-type: simple
+            tag-prefix: backend/v
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: ${{ matrix.release-type }}
+          path: ${{ matrix.path }}
+          tag-prefix: ${{ matrix.tag-prefix }}
+          bump-minor-pre-major: true

@@ -1,0 +1,21 @@
+# MacOS
+.DS_Store
+
+# Default TypeSpec output
+tsp-output/
+dist/
+
+# Dependency directories
+node_modules/
+
+# Environment files
+.env
+
+# Go binaries
+backend/server
+backend/server.exe
+
+# Playwright test artifacts
+tests/playwright-report/
+tests/test-results/
+tests/node_modules/

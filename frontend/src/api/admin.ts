@@ -1,0 +1,69 @@
+import { api } from './client.ts'
+import type { components } from '../types/api.ts'
+
+type AdminOwnerResponse = components['schemas']['Admin.AdminOwnerResponse']
+type MeetingTypeResponse = components['schemas']['Admin.MeetingTypeResponse']
+type CreateMeetingTypeRequest = components['schemas']['Admin.CreateMeetingTypeRequest']
+type MeetingResponse = components['schemas']['Admin.MeetingResponse']
+type MeetingStatusUpdate = components['schemas']['Admin.MeetingStatusUpdate']
+type MeetingTypeStatusUpdate = components['schemas']['Admin.MeetingTypeStatusUpdate']
+
+export function getOwner(adminSlug: string) {
+  return api.get<AdminOwnerResponse>(`/admin/${adminSlug}`)
+}
+
+export function getMeetingTypes(adminSlug: string) {
+  return api.get<MeetingTypeResponse[]>(
+    `/admin/${adminSlug}/meeting-types`,
+  )
+}
+
+export function createMeetingType(
+  adminSlug: string,
+  body: CreateMeetingTypeRequest,
+) {
+  return api.post<MeetingTypeResponse>(
+    `/admin/${adminSlug}/meeting-types`,
+    body,
+  )
+}
+
+export function getMeetings(
+  adminSlug: string,
+  filters?: {
+    dateStartFrom?: string
+    dateStartTo?: string
+    isConfirmed?: boolean
+    meetingTypeId?: string
+  },
+) {
+  const params = new URLSearchParams()
+  if (filters?.dateStartFrom) params.set('dateStartFrom', filters.dateStartFrom)
+  if (filters?.dateStartTo) params.set('dateStartTo', filters.dateStartTo)
+  if (filters?.isConfirmed !== undefined) params.set('isConfirmed', String(filters.isConfirmed))
+  if (filters?.meetingTypeId) params.set('meetingTypeId', filters.meetingTypeId)
+  const qs = params.toString()
+  return api.get<MeetingResponse[]>(`/admin/${adminSlug}/meetings${qs ? `?${qs}` : ''}`)
+}
+
+export function updateMeetingStatus(
+  adminSlug: string,
+  meetingId: string,
+  body: MeetingStatusUpdate,
+) {
+  return api.patch<MeetingResponse>(
+    `/admin/${adminSlug}/meetings/${meetingId}`,
+    body,
+  )
+}
+
+export function updateMeetingTypeStatus(
+  adminSlug: string,
+  meetingTypeId: string,
+  body: MeetingTypeStatusUpdate,
+) {
+  return api.patch<MeetingTypeResponse>(
+    `/admin/${adminSlug}/meeting-types/${meetingTypeId}`,
+    body,
+  )
+}
