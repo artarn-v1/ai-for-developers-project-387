@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.1.0...v1.1.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **infra:** add commitlint enforcement to opencode workflow ([d49ac9e](https://github.com/artarn-v1/ai-for-developers-project-387/commit/d49ac9eca895d1b646c2cb02c6035519b610c88b))
+* **infra:** enforce commit messages via AGENTS.md instructions ([f4cbcc9](https://github.com/artarn-v1/ai-for-developers-project-387/commit/f4cbcc98af34f7acfe35a4f76570f83bddffedbb))
+* **infra:** enforce commit messages via AGENTS.md instructions ([ac567db](https://github.com/artarn-v1/ai-for-developers-project-387/commit/ac567db37677b1a09e79e8c6fd493bd0f7d229c5))
+
 ## [1.1.0](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.0.1...v1.1.0) (2026-07-25)
 
 
