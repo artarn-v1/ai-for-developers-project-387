@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.1](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.0.0...v1.0.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **infra:** configure git identity for opencode action to fix commit failure ([a03084e](https://github.com/artarn-v1/ai-for-developers-project-387/commit/a03084eeff2b610e975b8d328434525a8c21943f))
+* **infra:** grant issues:write permission for opencode action to post comments ([c70cf0e](https://github.com/artarn-v1/ai-for-developers-project-387/commit/c70cf0e18323080e8fbf0f802d4bddfc8a2ac95d))
+* **infra:** grant pull-requests write permission to opencode workflow ([efde02a](https://github.com/artarn-v1/ai-for-developers-project-387/commit/efde02a7563fff0fc017e80f84b1be174403f844))
+* **infra:** persist git credentials and grant contents:write for opencode push ([14207b3](https://github.com/artarn-v1/ai-for-developers-project-387/commit/14207b318ff07b8cb5d50ebf039ed2eced742dbf))
+* **infra:** pin opencode action to v1.18.4 and use GITHUB_TOKEN directly ([1185ae0](https://github.com/artarn-v1/ai-for-developers-project-387/commit/1185ae023bd2933a79e326c1443286ef0ec1019d))
+
 ## 1.0.0 (2026-07-19)
 
 
