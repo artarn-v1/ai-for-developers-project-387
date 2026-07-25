@@ -82,6 +82,10 @@ make test-e2e-ui       # same but --ui mode
 
 **Requires Chrome:** Playwright uses `channel: 'chromium'`. If missing: `npx playwright install chromium`.
 
+## Commit convention
+
+All commit messages MUST follow Conventional Commits: `<type>(<scope>): <subject>`. Allowed scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`.
+
 ## CI / Branching
 
 - **commitlint** enforces Conventional Commits on PR (scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`)
