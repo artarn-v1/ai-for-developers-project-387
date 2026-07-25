@@ -186,7 +186,7 @@ export default function MeetingsPage() {
               <Table.Td style={cellStyle}>{m.meetingType.name}</Table.Td>
               <Table.Td style={cellStyle}>{m.initiator.name}</Table.Td>
               <Table.Td style={cellStyle}>
-                <Badge color={m.isConfirmed === undefined ? 'blue' : m.isConfirmed ? 'green' : 'yellow'}>
+                <Badge color={m.isConfirmed === undefined ? 'yellow' : m.isConfirmed ? 'green' : 'red'}>
                   {m.isConfirmed === undefined ? 'New' : m.isConfirmed ? 'Confirmed' : 'Declined'}
                 </Badge>
               </Table.Td>
