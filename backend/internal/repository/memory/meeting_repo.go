@@ -33,8 +33,14 @@ func (r *MeetingRepo) ListByOwnerID(ownerID string, filters repository.MeetingFi
 		if filters.DateStartTo != nil && m.StartDateTime.After(*filters.DateStartTo) {
 			match = false
 		}
-		if filters.IsConfirmed != nil && (m.IsConfirmed == nil || *m.IsConfirmed != *filters.IsConfirmed) {
-			match = false
+		if filters.IsConfirmed != repository.ConfirmedUnspecified {
+			if filters.IsConfirmed == repository.Unconfirmed {
+				if m.IsConfirmed != nil {
+					match = false
+				}
+			} else if m.IsConfirmed == nil || (filters.IsConfirmed == repository.Confirmed) != *m.IsConfirmed {
+				match = false
+			}
 		}
 		if filters.MeetingTypeID != nil && m.MeetingTypeID != *filters.MeetingTypeID {
 			match = false

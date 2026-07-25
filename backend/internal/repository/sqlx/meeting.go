@@ -37,10 +37,14 @@ func (r *MeetingRepo) ListByOwnerID(ownerID string, filters repository.MeetingFi
 		args = append(args, *filters.DateStartTo)
 		argIdx++
 	}
-	if filters.IsConfirmed != nil {
-		query += fmt.Sprintf(" AND m.is_confirmed = $%d", argIdx)
-		args = append(args, *filters.IsConfirmed)
-		argIdx++
+	if filters.IsConfirmed != repository.ConfirmedUnspecified {
+		if filters.IsConfirmed == repository.Unconfirmed {
+			query += " AND m.is_confirmed IS NULL"
+		} else {
+			query += fmt.Sprintf(" AND m.is_confirmed = $%d", argIdx)
+			args = append(args, filters.IsConfirmed == repository.Confirmed)
+			argIdx++
+		}
 	}
 	if filters.MeetingTypeID != nil {
 		query += fmt.Sprintf(" AND m.meeting_type_id = $%d", argIdx)
