@@ -34,11 +34,11 @@ func (r *MeetingRepo) ListByOwnerID(ownerID string, filters repository.MeetingFi
 			match = false
 		}
 		if filters.IsConfirmed != repository.ConfirmedUnspecified {
-			if filters.IsConfirmed == repository.ConfirmedNull {
+			if filters.IsConfirmed == repository.Unconfirmed {
 				if m.IsConfirmed != nil {
 					match = false
 				}
-			} else if m.IsConfirmed == nil || (filters.IsConfirmed == repository.ConfirmedTrue) != *m.IsConfirmed {
+			} else if m.IsConfirmed == nil || (filters.IsConfirmed == repository.Confirmed) != *m.IsConfirmed {
 				match = false
 			}
 		}

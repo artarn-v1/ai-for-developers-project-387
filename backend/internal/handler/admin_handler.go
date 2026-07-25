@@ -154,11 +154,11 @@ func (h *AdminHandler) listMeetings(w http.ResponseWriter, r *http.Request) {
 	if v := r.URL.Query().Get("isConfirmed"); v != "" {
 		switch v {
 		case "true":
-			filters.IsConfirmed = repository.ConfirmedTrue
+			filters.IsConfirmed = repository.Confirmed
 		case "false":
-			filters.IsConfirmed = repository.ConfirmedFalse
+			filters.IsConfirmed = repository.Declined
 		case "null":
-			filters.IsConfirmed = repository.ConfirmedNull
+			filters.IsConfirmed = repository.Unconfirmed
 		}
 	}
 	if v := r.URL.Query().Get("meetingTypeId"); v != "" {

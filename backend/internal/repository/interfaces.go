@@ -34,9 +34,9 @@ type ConfirmedFilter int
 
 const (
 	ConfirmedUnspecified ConfirmedFilter = iota
-	ConfirmedTrue
-	ConfirmedFalse
-	ConfirmedNull
+	Confirmed
+	Declined
+	Unconfirmed
 )
 
 type MeetingFilters struct {
