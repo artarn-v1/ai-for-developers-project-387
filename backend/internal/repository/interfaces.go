@@ -30,10 +30,19 @@ type ParticipantRepository interface {
 	Create(p *model.Participant) error
 }
 
+type ConfirmedFilter int
+
+const (
+	ConfirmedUnspecified ConfirmedFilter = iota
+	ConfirmedTrue
+	ConfirmedFalse
+	ConfirmedNull
+)
+
 type MeetingFilters struct {
 	DateStartFrom *time.Time
 	DateStartTo   *time.Time
-	IsConfirmed   *bool
+	IsConfirmed   ConfirmedFilter
 	MeetingTypeID *string
 }
 

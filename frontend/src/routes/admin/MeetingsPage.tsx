@@ -49,6 +49,7 @@ export default function MeetingsPage() {
     ...(dateStartTo && { dateStartTo: new Date(dateStartTo).toISOString() }),
     ...(statusFilter === 'confirmed' && { isConfirmed: true }),
     ...(statusFilter === 'declined' && { isConfirmed: false }),
+    ...(statusFilter === 'new' && { isConfirmed: null }),
     ...(meetingTypeId && { meetingTypeId }),
   }
 
@@ -141,6 +142,7 @@ export default function MeetingsPage() {
           value={statusFilter === 'all' ? null : statusFilter}
           onChange={(v) => setStatusFilter(v ?? 'all')}
           data={[
+            { value: 'new', label: 'New' },
             { value: 'confirmed', label: 'Confirmed' },
             { value: 'declined', label: 'Declined' },
           ]}
@@ -184,8 +186,8 @@ export default function MeetingsPage() {
               <Table.Td style={cellStyle}>{m.meetingType.name}</Table.Td>
               <Table.Td style={cellStyle}>{m.initiator.name}</Table.Td>
               <Table.Td style={cellStyle}>
-                <Badge color={m.isConfirmed ? 'green' : 'yellow'}>
-                  {m.isConfirmed ? 'Confirmed' : 'Declined'}
+                <Badge color={m.isConfirmed === undefined ? 'blue' : m.isConfirmed ? 'green' : 'yellow'}>
+                  {m.isConfirmed === undefined ? 'New' : m.isConfirmed ? 'Confirmed' : 'Declined'}
                 </Badge>
               </Table.Td>
               <Table.Td style={cellStyle}>
@@ -245,8 +247,8 @@ export default function MeetingsPage() {
               </Box>
               <Box>
                 <Text size="sm" c={COLORS.mutedText}>Status</Text>
-                <Badge color={selected.isConfirmed ? 'green' : 'yellow'}>
-                  {selected.isConfirmed ? 'Confirmed' : 'Declined'}
+                <Badge color={selected.isConfirmed === undefined ? 'blue' : selected.isConfirmed ? 'green' : 'yellow'}>
+                  {selected.isConfirmed === undefined ? 'New' : selected.isConfirmed ? 'Confirmed' : 'Declined'}
                 </Badge>
               </Box>
             </Group>
