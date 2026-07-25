@@ -82,9 +82,25 @@ make test-e2e-ui       # same but --ui mode
 
 **Requires Chrome:** Playwright uses `channel: 'chromium'`. If missing: `npx playwright install chromium`.
 
-## Commit convention
+## Commit convention — CRITICAL
 
-All commit messages MUST follow Conventional Commits: `<type>(<scope>): <subject>`. Allowed scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`.
+All commit messages **MUST** follow Conventional Commits: `<type>(<scope>): <subject>`. Allowed scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`.
+
+**Before making any commit, verify the message:**
+```bash
+echo "<type>(<scope>): <description>" | npx commitlint
+```
+If commitlint exits with non-zero, fix the message first.
+
+You can also lint the last commit with:
+```bash
+make lint-commits
+```
+
+To validate all commits in the current PR branch:
+```bash
+make lint-commits-ci
+```
 
 ## CI / Branching
 
