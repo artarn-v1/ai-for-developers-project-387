@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.0.1...v1.1.0) (2026-07-25)
+
+
+### Features
+
+* **api:** add Unconfirmed status for meetings ([8cc6f8f](https://github.com/artarn-v1/ai-for-developers-project-387/commit/8cc6f8fc4bac29b9e4090b1c523c474b8de9d37b))
+* **api:** add Unconfirmed status for meetings ([da3df9e](https://github.com/artarn-v1/ai-for-developers-project-387/commit/da3df9e30f8053e3ebf5f2aae9e5708fd73c5e70))
+
 ## [1.0.1](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.0.0...v1.0.1) (2026-07-25)
 
 
