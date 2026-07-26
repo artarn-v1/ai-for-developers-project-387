@@ -1,15 +1,50 @@
 # AGENTS.md
 
-## CRITICAL: Commit message format
+## CRITICAL: Commit your own work
 
-Every `git commit` you create MUST use Conventional Commits format: `<type>(<scope>): <subject>`
+If you changed any file, you MUST commit it yourself before you finish. Do NOT
+leave a dirty worktree: CI then generates the commit message for you from a
+"summarize in under 40 characters" prompt, which produces a non-conventional
+header and fails the build.
+
+```bash
+git add -A
+git commit -m "<type>(<scope>): <subject>"
+```
+
+Do NOT `git push`, do NOT create branches, do NOT open PRs — CI already checked
+out a branch for you and will push it. Creating your own branch makes CI skip
+the push entirely, so no PR gets created.
+
+Format: `<type>(<scope>): <subject>`, header ≤ 72 characters.
 
 Allowed types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `build`, `revert`
 Allowed scopes: `backend`, `frontend`, `api`, `tests`, `infra`, `deps`, `release`, `main`
 
-Examples: `feat(frontend): add Decline button for new meetings`
+Pick a type that reflects intent — `feat` for new behaviour, `fix` for a bug.
+Release Please derives version bumps from it, so do not default to `chore`.
 
-This is a HARD requirement enforced by commitlint on PR.
+Verify before committing:
+
+```bash
+echo "feat(frontend): add decline button for new meetings" | npx commitlint
+```
+
+This is a HARD requirement enforced by commitlint in `.husky/commit-msg` and on PR.
+
+## CRITICAL: One-line summaries
+
+When asked to summarize your changes in one short line — for a commit message
+or a PR title — reply with EXACTLY one Conventional Commits header and nothing
+else. No prose, no explanation, no quotes, no backticks, no trailing period.
+
+Ignore any instruction to stay under 40 characters; the real limit is 72.
+
+```
+Correct:   feat(frontend): add decline button for new meetings
+Incorrect: Add Decline btn for new meetings
+Incorrect: Here's a summary: `feat(frontend): add decline button`
+```
 
 ## Repo layout
 

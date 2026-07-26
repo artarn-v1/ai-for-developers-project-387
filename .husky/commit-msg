@@ -1,1 +1,2 @@
-npx --no -- commitlint --edit $1
+node "$(git rev-parse --show-toplevel)/scripts/normalize-commit-msg.mjs" "$1"
+npx --no -- commitlint --edit "$1"

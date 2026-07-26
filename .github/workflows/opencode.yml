@@ -35,16 +35,14 @@ jobs:
           npm ci
           cd frontend && npm ci
 
-      - name: Install commit-msg hook
-        run: |
-          mkdir -p .git/hooks
-          printf '%s\n' '#!/bin/sh' 'npx commitlint --edit "$1"' > .git/hooks/commit-msg
-          chmod +x .git/hooks/commit-msg
-
       - name: Configure git identity
         run: |
           git config user.name "opencode-bot"
           git config user.email "opencode-bot@users.noreply.github.com"
+
+      - name: Record base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Run opencode
         uses: anomalyco/opencode/github@v1.18.4
@@ -56,4 +54,4 @@ jobs:
           use_github_token: true
 
       - name: Validate commit messages
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha || 'HEAD~1' }} --to HEAD
+        run: npx commitlint --from ${{ steps.base.outputs.sha }} --to HEAD
