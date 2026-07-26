@@ -1,8 +1,10 @@
-name: Daily Code Audit
+name: Weekly Code Audit
 
 on:
   schedule:
-    - cron: '0 18 * * *'
+    # Mondays at 01:13 UTC. Minute 13 (not 0) avoids the top-of-hour
+    # scheduler contention where GitHub may drop queued scheduled runs.
+    - cron: '13 1 * * 1'
   workflow_dispatch:
 
 permissions:
