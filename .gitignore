@@ -19,3 +19,6 @@ backend/server.exe
 tests/playwright-report/
 tests/test-results/
 tests/node_modules/
+
+# Lighthouse audit reports
+reports/
