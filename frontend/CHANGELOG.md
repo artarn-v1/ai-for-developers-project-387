@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.1.1...v1.2.0) (2026-07-26)
+
+
+### Features
+
+* **frontend:** add decline button for new meetings ([3613ddf](https://github.com/artarn-v1/ai-for-developers-project-387/commit/3613ddfc684a5548b4c1e58f9b67ffc6aa0cb142))
+* **frontend:** add decline button for new meetings ([d6345cc](https://github.com/artarn-v1/ai-for-developers-project-387/commit/d6345ccff93e3509edc23de2ba6beeea6eb9756f))
+
 ## [1.1.0](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.0.1...v1.1.0) (2026-07-25)
 
 
