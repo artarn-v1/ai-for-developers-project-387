@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.1.1...v1.2.0) (2026-07-26)
+
+
+### Features
+
+* **frontend:** add decline button for new meetings ([3613ddf](https://github.com/artarn-v1/ai-for-developers-project-387/commit/3613ddfc684a5548b4c1e58f9b67ffc6aa0cb142))
+* **frontend:** add decline button for new meetings ([d6345cc](https://github.com/artarn-v1/ai-for-developers-project-387/commit/d6345ccff93e3509edc23de2ba6beeea6eb9756f))
+* **infra:** add daily code audit workflow with lighthouse and opencode ([e22c257](https://github.com/artarn-v1/ai-for-developers-project-387/commit/e22c257b094a95b8dcabbb5c9076c67eacf9b56b))
+
+
+### Bug Fixes
+
+* **infra:** add eslint as root dependency for pre-commit hook in CI ([ca2be67](https://github.com/artarn-v1/ai-for-developers-project-387/commit/ca2be670eb9d1c94a8a7cd45eaf23bc5944605b7))
+* **infra:** enforce conventional commits via git hook in CI ([751fc42](https://github.com/artarn-v1/ai-for-developers-project-387/commit/751fc42bb0d53cdc5d4b6c443093227dad3a4d4f))
+* **infra:** install frontend deps for eslint in opencode CI ([cfd2fe4](https://github.com/artarn-v1/ai-for-developers-project-387/commit/cfd2fe4a5875a232123679672826e1214109af2c))
+* **infra:** normalize opencode commit messages in CI ([a8b40e9](https://github.com/artarn-v1/ai-for-developers-project-387/commit/a8b40e932e1a44fe0581fe98ca100fe4894e3b95))
+* **infra:** remove unused workflows permission from opencode ([dfe498a](https://github.com/artarn-v1/ai-for-developers-project-387/commit/dfe498a8d8c02889c8f425f228ee51987dafd715))
+* **infra:** restrict opencode workflow to project members ([be7a4fe](https://github.com/artarn-v1/ai-for-developers-project-387/commit/be7a4fec547c5cd3b73ab29afb5da61bf849f5e0))
+* **infra:** set git identity in daily code audit workflow ([45d36fd](https://github.com/artarn-v1/ai-for-developers-project-387/commit/45d36fdea0e21601bf78a66ed179c84551d27673))
+
 ## [1.1.1](https://github.com/artarn-v1/ai-for-developers-project-387/compare/v1.1.0...v1.1.1) (2026-07-25)
 
 
