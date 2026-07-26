@@ -8,11 +8,24 @@ on:
 
 jobs:
   opencode:
+    # Authorization is enforced here, in two layers, because the action's own
+    # permission check is a no-op for us: assertPermissions() in
+    # anomalyco/opencode/github/index.ts returns early whenever
+    # `use_github_token: true`, which we set below. Without these gates any
+    # GitHub account could comment `/oc` on this public repo and get a job
+    # holding `contents: write` plus OPENCODE_API_KEY.
+    #
+    # Layer 1 - association filter. On a miss the job is never created, so no
+    # runner minutes are spent and no secret is materialised. Silent by design:
+    # outsiders get no feedback and no way to provoke a bot reply.
     if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+      (
+        contains(github.event.comment.body, ' /oc') ||
+        startsWith(github.event.comment.body, '/oc') ||
+        contains(github.event.comment.body, ' /opencode') ||
+        startsWith(github.event.comment.body, '/opencode')
+      ) &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -20,6 +33,35 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      # Layer 2 - authoritative check. Layer 1 is not sufficient on its own:
+      # COLLABORATOR covers read-only invitees and MEMBER only means "member of
+      # the org", neither of which implies write access to this repo. Runs
+      # before checkout, and before OPENCODE_API_KEY enters the environment
+      # (it is scoped to the `Run opencode` step). Fails closed on API errors.
+      - name: Verify write access
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const username = context.payload.comment.user.login
+            let permission
+            try {
+              const res = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username,
+              })
+              permission = res.data.permission
+            } catch (error) {
+              core.setFailed(`Cannot verify access for ${username}: ${error.message}`)
+              return
+            }
+            core.info(`${username} permission: ${permission}`)
+            // The endpoint maps maintain -> write and triage -> read, so these
+            // two values are the whole allowlist.
+            if (!['admin', 'write'].includes(permission)) {
+              core.setFailed(`${username} lacks write access; /oc is restricted to project members.`)
+            }
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
