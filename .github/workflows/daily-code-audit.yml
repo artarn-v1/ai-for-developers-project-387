@@ -1,0 +1,70 @@
+name: Daily Code Audit
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Start preview server
+        run: |
+          cd frontend && npx vite preview --port 4173 &
+          for i in $(seq 1 30); do
+            curl -s http://localhost:4173 > /dev/null && break
+            sleep 1
+          done
+
+      - name: Run Lighthouse audit
+        run: |
+          mkdir -p reports
+          npx lighthouse http://localhost:4173 \
+            --output=json \
+            --output-path=./reports/lighthouse.json \
+            --chrome-flags="--headless --no-sandbox --disable-gpu" \
+            --quiet
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: reports/lighthouse.json
+          retention-days: 30
+
+      - name: Run opencode analysis
+        uses: anomalyco/opencode/github@v1.18.4
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          model: opencode/deepseek-v4-flash-free
+          use_github_token: true
+          prompt: |
+            Read the Lighthouse audit report at reports/lighthouse.json.
+            Analyze performance, accessibility, best-practices, and SEO scores.
+            For each category state the score and list actionable fixes.
+            Create a GitHub Issue titled "Code Audit Report" with the full
+            analysis and fix suggestions. Label it "audit".
