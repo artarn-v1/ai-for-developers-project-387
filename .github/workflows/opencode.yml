@@ -25,6 +25,20 @@ jobs:
         with:
           persist-credentials: true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install commit-msg hook
+        run: |
+          mkdir -p .git/hooks
+          printf '%s\n' '#!/bin/sh' 'npx commitlint --edit "$1"' > .git/hooks/commit-msg
+          chmod +x .git/hooks/commit-msg
+
       - name: Configure git identity
         run: |
           git config user.name "opencode-bot"
@@ -38,14 +52,6 @@ jobs:
         with:
           model: opencode/deepseek-v4-flash-free
           use_github_token: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Validate commit messages
         run: npx commitlint --from ${{ github.event.pull_request.base.sha || 'HEAD~1' }} --to HEAD
