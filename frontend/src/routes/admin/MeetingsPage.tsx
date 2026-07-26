@@ -199,7 +199,17 @@ export default function MeetingsPage() {
                   >
                     View
                   </Button>
-                  {!m.isConfirmed && (
+                  {m.isConfirmed === undefined && (
+                    <Button
+                      size="xs"
+                      color="red"
+                      loading={declineMutation.isPending}
+                      onClick={() => declineMutation.mutate(m.id)}
+                    >
+                      Decline
+                    </Button>
+                  )}
+                  {m.isConfirmed !== true && (
                     <Button
                       size="xs"
                       loading={confirmMutation.isPending}
@@ -289,21 +299,38 @@ export default function MeetingsPage() {
             <Divider color={COLORS.border} />
 
             <Group justify="center" gap="md">
-              {!selected.isConfirmed && (
-                <Button
-                  loading={confirmMutation.isPending}
-                  onClick={() => confirmMutation.mutate(selected.id)}
-                >
-                  Confirm
-                </Button>
+              {selected.isConfirmed === undefined && (
+                <>
+                  <Button
+                    loading={confirmMutation.isPending}
+                    onClick={() => confirmMutation.mutate(selected.id)}
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    color="red"
+                    loading={declineMutation.isPending}
+                    onClick={() => declineMutation.mutate(selected.id)}
+                  >
+                    Decline
+                  </Button>
+                </>
               )}
-              {selected.isConfirmed && (
+              {selected.isConfirmed === true && (
                 <Button
                   color="red"
                   loading={declineMutation.isPending}
                   onClick={() => declineMutation.mutate(selected.id)}
                 >
                   Decline
+                </Button>
+              )}
+              {selected.isConfirmed === false && (
+                <Button
+                  loading={confirmMutation.isPending}
+                  onClick={() => confirmMutation.mutate(selected.id)}
+                >
+                  Confirm
                 </Button>
               )}
             </Group>
